@@ -66,13 +66,13 @@ stdout.toLowerCase().includes('approved')
 ## Commands
 
 ```bash
-npm test              # Run tests (vitest)
-npm run test:watch    # Run tests in watch mode
-npm run build         # Build worker + client
-npm run deploy        # Build and deploy to Cloudflare
-npm run dev           # Vite dev server
-npm run start         # wrangler dev (local worker)
-npm run typecheck     # TypeScript check
+bun test              # Run tests (vitest)
+bun run test:watch    # Run tests in watch mode
+bun run build         # Build worker + client
+bun run deploy        # Build and deploy to Cloudflare
+bun run dev           # Vite dev server
+bun run start         # wrangler dev (local worker)
+bun run typecheck     # TypeScript check
 ```
 
 ## Testing
@@ -143,10 +143,10 @@ Browser
 ## Local Development
 
 ```bash
-npm install
+bun install
 cp .dev.vars.example .dev.vars
 # Edit .dev.vars with your ANTHROPIC_API_KEY
-npm run start
+bun run start
 ```
 
 ### Environment Variables
@@ -238,10 +238,10 @@ See [OpenClaw docs](https://docs.openclaw.ai/) for full schema.
 
 ```bash
 # View live logs
-npx wrangler tail
+bunx wrangler tail
 
 # Check secrets
-npx wrangler secret list
+bunx wrangler secret list
 ```
 
 Enable debug routes with `DEBUG_ROUTES=true` and check `/debug/processes`.

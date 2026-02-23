@@ -174,14 +174,22 @@ if (process.env.OPENCLAW_DEV_MODE === 'true') {
 // so we don't need to patch the provider config. Writing a provider
 // entry without a models array breaks OpenClaw's config validation.
 
+// ============================================================
+// TOKEN OPTIMIZATION: Model Routing (Part 2)
+// Default to Haiku for cost savings, add aliases for on-demand switching.
+// CF_AI_GATEWAY_MODEL env var overrides the default.
+// ============================================================
+const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
+const modelOverride = process.env.CF_AI_GATEWAY_MODEL;
+
 // AI Gateway model override (CF_AI_GATEWAY_MODEL=provider/model-id)
 // Adds a provider entry for any AI Gateway provider and sets it as default model.
 // Examples:
 //   workers-ai/@cf/meta/llama-3.3-70b-instruct-fp8-fast
 //   openai/gpt-4o
-//   anthropic/claude-sonnet-4-5
-if (process.env.CF_AI_GATEWAY_MODEL) {
-    const raw = process.env.CF_AI_GATEWAY_MODEL;
+//   anthropic/claude-sonnet-4-6
+if (modelOverride) {
+    const raw = modelOverride;
     const slashIdx = raw.indexOf('/');
     const gwProvider = raw.substring(0, slashIdx);
     const modelId = raw.substring(slashIdx + 1);
@@ -217,6 +225,90 @@ if (process.env.CF_AI_GATEWAY_MODEL) {
     } else {
         console.warn('CF_AI_GATEWAY_MODEL set but missing required config (account ID, gateway ID, or API key)');
     }
+} else {
+    // No override: default to Haiku for cost savings
+    config.agents = config.agents || {};
+    config.agents.defaults = config.agents.defaults || {};
+    if (!config.agents.defaults.model) {
+        config.agents.defaults.model = { primary: 'anthropic/' + DEFAULT_MODEL };
+        console.log('Defaulting to Haiku: anthropic/' + DEFAULT_MODEL);
+    }
+}
+
+// Model aliases for on-demand switching ("use sonnet", "use haiku", "use opus")
+config.agents = config.agents || {};
+config.agents.defaults = config.agents.defaults || {};
+config.agents.defaults.models = config.agents.defaults.models || {};
+config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001'] =
+    config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001'] || { alias: 'haiku' };
+config.agents.defaults.models['anthropic/claude-sonnet-4-6'] =
+    config.agents.defaults.models['anthropic/claude-sonnet-4-6'] || { alias: 'sonnet' };
+config.agents.defaults.models['anthropic/claude-opus-4-6'] =
+    config.agents.defaults.models['anthropic/claude-opus-4-6'] || { alias: 'opus' };
+console.log('Model aliases configured: haiku, sonnet, opus');
+
+// ============================================================
+// TOKEN OPTIMIZATION: Heartbeat via Workers AI (Part 3)
+// Route heartbeat checks through AI Gateway using a cheap Workers AI model.
+// No Ollama needed — fully Cloudflare-native.
+// ============================================================
+if (process.env.CF_AI_GATEWAY_ACCOUNT_ID && process.env.CF_AI_GATEWAY_GATEWAY_ID) {
+    config.heartbeat = config.heartbeat || {};
+    if (!config.heartbeat.model) {
+        config.heartbeat.every = config.heartbeat.every || '1h';
+        config.heartbeat.model = 'cf-ai-gw-workers-ai/@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+        config.heartbeat.prompt = config.heartbeat.prompt || 'Check: Any blockers, opportunities, or progress updates needed?';
+
+        // Ensure Workers AI provider exists for heartbeat
+        const hbAccountId = process.env.CF_AI_GATEWAY_ACCOUNT_ID;
+        const hbGatewayId = process.env.CF_AI_GATEWAY_GATEWAY_ID;
+        const hbApiKey = process.env.CLOUDFLARE_AI_GATEWAY_API_KEY;
+        if (hbApiKey) {
+            config.models = config.models || {};
+            config.models.providers = config.models.providers || {};
+            if (!config.models.providers['cf-ai-gw-workers-ai']) {
+                config.models.providers['cf-ai-gw-workers-ai'] = {
+                    baseUrl: 'https://gateway.ai.cloudflare.com/v1/' + hbAccountId + '/' + hbGatewayId + '/workers-ai/v1',
+                    apiKey: hbApiKey,
+                    api: 'openai-completions',
+                    models: [{ id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', name: 'llama-3.3-70b', contextWindow: 131072, maxTokens: 4096 }],
+                };
+            }
+            console.log('Heartbeat configured via Workers AI (free tier)');
+        }
+    }
+} else {
+    console.log('Heartbeat: AI Gateway not configured, skipping Workers AI heartbeat');
+}
+
+// ============================================================
+// TOKEN OPTIMIZATION: Prompt Caching (Part 6)
+// Cache system prompts and stable content for 90% token discount on reuse.
+// Only effective with Sonnet; Haiku is too cheap to benefit.
+// ============================================================
+config.agents = config.agents || {};
+config.agents.defaults = config.agents.defaults || {};
+if (!config.agents.defaults.cache) {
+    config.agents.defaults.cache = {
+        enabled: true,
+        ttl: '5m',
+        priority: 'high',
+    };
+    console.log('Prompt caching enabled (ttl=5m, priority=high)');
+}
+// Per-model cache: enable for Sonnet (worth caching), skip for Haiku (too cheap)
+config.agents.defaults.models = config.agents.defaults.models || {};
+if (config.agents.defaults.models['anthropic/claude-sonnet-4-6']) {
+    config.agents.defaults.models['anthropic/claude-sonnet-4-6'].cache =
+        config.agents.defaults.models['anthropic/claude-sonnet-4-6'].cache !== undefined
+            ? config.agents.defaults.models['anthropic/claude-sonnet-4-6'].cache
+            : true;
+}
+if (config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001']) {
+    config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001'].cache =
+        config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001'].cache !== undefined
+            ? config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001'].cache
+            : false;
 }
 
 // Telegram configuration
@@ -262,7 +354,100 @@ if (process.env.SLACK_BOT_TOKEN && process.env.SLACK_APP_TOKEN) {
 
 fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 console.log('Configuration patched successfully');
+console.log('Token optimization: model routing + heartbeat + caching configured');
 EOFPATCH
+
+# ============================================================
+# TOKEN OPTIMIZATION: Workspace Templates (Parts 1, 4, 5)
+# Create default SOUL.md and USER.md with session init rules,
+# model selection rules, and rate limits if they don't exist.
+# ============================================================
+if [ ! -f "$WORKSPACE_DIR/SOUL.md" ]; then
+    echo "Creating default SOUL.md with token optimization rules..."
+    cat > "$WORKSPACE_DIR/SOUL.md" << 'EOFSOUL'
+# SOUL.md
+
+## Core Principles
+
+- Be helpful, accurate, and efficient
+- Minimize token usage without sacrificing quality
+- Use the right model for the right task
+
+## SESSION INITIALIZATION RULE
+
+On every session start:
+1. Load ONLY these files:
+   - SOUL.md
+   - USER.md
+   - IDENTITY.md
+   - memory/YYYY-MM-DD.md (if it exists)
+
+2. DO NOT auto-load:
+   - MEMORY.md
+   - Session history
+   - Prior messages
+   - Previous tool outputs
+
+3. When user asks about prior context:
+   - Use memory_search() on demand
+   - Pull only the relevant snippet with memory_get()
+   - Don't load the whole file
+
+4. Update memory/YYYY-MM-DD.md at end of session with:
+   - What you worked on
+   - Decisions made
+   - Leads generated
+   - Blockers
+   - Next steps
+
+## MODEL SELECTION RULE
+
+Default: Always use Haiku
+Switch to Sonnet ONLY when:
+- Architecture decisions
+- Production code review
+- Security analysis
+- Complex debugging/reasoning
+- Strategic multi-project decisions
+
+When in doubt: Try Haiku first.
+
+## RATE LIMITS
+
+- 5 seconds minimum between API calls
+- 10 seconds between web searches
+- Max 5 searches per batch, then 2-minute break
+- Batch similar work (one request for 10 leads, not 10 requests)
+- If you hit 429 error: STOP, wait 5 minutes, retry
+
+DAILY BUDGET: $5 (warning at 75%)
+MONTHLY BUDGET: $200 (warning at 75%)
+EOFSOUL
+    echo "SOUL.md created"
+fi
+
+if [ ! -f "$WORKSPACE_DIR/USER.md" ]; then
+    echo "Creating default USER.md template..."
+    cat > "$WORKSPACE_DIR/USER.md" << 'EOFUSER'
+# USER.md
+
+- **Name:** [YOUR NAME]
+- **Timezone:** [YOUR TIMEZONE]
+- **Mission:** [WHAT YOU'RE BUILDING]
+
+## Success Metrics
+
+- [METRIC 1]
+- [METRIC 2]
+- [METRIC 3]
+
+## Notes
+
+Customize this file with your information. Keep it lean —
+every line costs tokens on every request.
+EOFUSER
+    echo "USER.md created"
+fi
 
 # ============================================================
 # BACKGROUND SYNC LOOP

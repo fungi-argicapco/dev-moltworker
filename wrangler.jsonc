@@ -3,7 +3,9 @@
   "name": "dev-moltworker",
   "main": "src/index.ts",
   "compatibility_date": "2025-05-06",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "observability": {
     "enabled": true,
   },
@@ -19,18 +21,22 @@
   "rules": [
     {
       "type": "Text",
-      "globs": ["**/*.html"],
+      "globs": [
+        "**/*.html"
+      ],
       "fallthrough": false,
     },
     {
       "type": "Data",
-      "globs": ["**/*.png"],
+      "globs": [
+        "**/*.png"
+      ],
       "fallthrough": false,
     },
   ],
   // Build command for vite
   "build": {
-    "command": "npm run build",
+    "command": "bun run build",
   },
   // Container configuration for the Moltbot sandbox
   "containers": [
@@ -51,7 +57,9 @@
   },
   "migrations": [
     {
-      "new_sqlite_classes": ["Sandbox"],
+      "new_sqlite_classes": [
+        "Sandbox"
+      ],
       "tag": "v1",
     },
   ],
@@ -59,10 +67,10 @@
   "r2_buckets": [
     {
       "binding": "MOLTBOT_BUCKET",
-      "bucket_name": "moltbot-data","preview_bucket_name": "moltbot-data",
+      "bucket_name": "moltbot-data",
+      "preview_bucket_name": "moltbot-data",
     },
   ],
-
   // Browser Rendering binding for CDP shim
   "browser": {
     "binding": "BROWSER",
