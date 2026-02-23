@@ -247,69 +247,11 @@ config.agents.defaults.models['anthropic/claude-opus-4-6'] =
     config.agents.defaults.models['anthropic/claude-opus-4-6'] || { alias: 'opus' };
 console.log('Model aliases configured: haiku, sonnet, opus');
 
-// ============================================================
-// TOKEN OPTIMIZATION: Heartbeat via Workers AI (Part 3)
-// Route heartbeat checks through AI Gateway using a cheap Workers AI model.
-// No Ollama needed — fully Cloudflare-native.
-// ============================================================
-if (process.env.CF_AI_GATEWAY_ACCOUNT_ID && process.env.CF_AI_GATEWAY_GATEWAY_ID) {
-    config.heartbeat = config.heartbeat || {};
-    if (!config.heartbeat.model) {
-        config.heartbeat.every = config.heartbeat.every || '1h';
-        config.heartbeat.model = 'cf-ai-gw-workers-ai/@cf/meta/llama-3.3-70b-instruct-fp8-fast';
-        config.heartbeat.prompt = config.heartbeat.prompt || 'Check: Any blockers, opportunities, or progress updates needed?';
-
-        // Ensure Workers AI provider exists for heartbeat
-        const hbAccountId = process.env.CF_AI_GATEWAY_ACCOUNT_ID;
-        const hbGatewayId = process.env.CF_AI_GATEWAY_GATEWAY_ID;
-        const hbApiKey = process.env.CLOUDFLARE_AI_GATEWAY_API_KEY;
-        if (hbApiKey) {
-            config.models = config.models || {};
-            config.models.providers = config.models.providers || {};
-            if (!config.models.providers['cf-ai-gw-workers-ai']) {
-                config.models.providers['cf-ai-gw-workers-ai'] = {
-                    baseUrl: 'https://gateway.ai.cloudflare.com/v1/' + hbAccountId + '/' + hbGatewayId + '/workers-ai/v1',
-                    apiKey: hbApiKey,
-                    api: 'openai-completions',
-                    models: [{ id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', name: 'llama-3.3-70b', contextWindow: 131072, maxTokens: 4096 }],
-                };
-            }
-            console.log('Heartbeat configured via Workers AI (free tier)');
-        }
-    }
-} else {
-    console.log('Heartbeat: AI Gateway not configured, skipping Workers AI heartbeat');
-}
-
-// ============================================================
-// TOKEN OPTIMIZATION: Prompt Caching (Part 6)
-// Cache system prompts and stable content for 90% token discount on reuse.
-// Only effective with Sonnet; Haiku is too cheap to benefit.
-// ============================================================
-config.agents = config.agents || {};
-config.agents.defaults = config.agents.defaults || {};
-if (!config.agents.defaults.cache) {
-    config.agents.defaults.cache = {
-        enabled: true,
-        ttl: '5m',
-        priority: 'high',
-    };
-    console.log('Prompt caching enabled (ttl=5m, priority=high)');
-}
-// Per-model cache: enable for Sonnet (worth caching), skip for Haiku (too cheap)
-config.agents.defaults.models = config.agents.defaults.models || {};
-if (config.agents.defaults.models['anthropic/claude-sonnet-4-6']) {
-    config.agents.defaults.models['anthropic/claude-sonnet-4-6'].cache =
-        config.agents.defaults.models['anthropic/claude-sonnet-4-6'].cache !== undefined
-            ? config.agents.defaults.models['anthropic/claude-sonnet-4-6'].cache
-            : true;
-}
-if (config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001']) {
-    config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001'].cache =
-        config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001'].cache !== undefined
-            ? config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001'].cache
-            : false;
-}
+// NOTE: Heartbeat (Part 3) and Prompt Caching (Part 6) are NOT supported
+// by the current OpenClaw config schema. Adding 'heartbeat' at root or
+// 'cache' on agents.defaults/model entries causes the gateway to reject
+// the config and fail to start. These features should be re-evaluated
+// when OpenClaw adds schema support for them.
 
 // Telegram configuration
 // Overwrite entire channel object to drop stale keys from old R2 backups
