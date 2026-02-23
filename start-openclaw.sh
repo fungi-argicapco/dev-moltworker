@@ -248,57 +248,30 @@ config.agents.defaults.models['anthropic/claude-opus-4-6'] =
 console.log('Model aliases configured: haiku, sonnet, opus');
 
 // ============================================================
-// TOKEN OPTIMIZATION: Heartbeat via Workers AI (Part 3)
-// Route heartbeat checks through AI Gateway using a cheap Workers AI model.
-// Schema: agents.defaults.heartbeat (NOT root-level 'heartbeat')
+// CONFIG CLEANUP: Remove unsupported keys
+// The R2 backup may contain stale keys from previous deploys.
+// OpenClaw's strict config validation rejects unknown keys and
+// crashes the gateway. Strip them before writing the config.
 // ============================================================
-if (process.env.CF_AI_GATEWAY_ACCOUNT_ID && process.env.CF_AI_GATEWAY_GATEWAY_ID) {
-    config.agents.defaults.heartbeat = config.agents.defaults.heartbeat || {};
-    if (!config.agents.defaults.heartbeat.model) {
-        config.agents.defaults.heartbeat.every = config.agents.defaults.heartbeat.every || '1h';
-        config.agents.defaults.heartbeat.model = 'cf-ai-gw-workers-ai/@cf/meta/llama-3.3-70b-instruct-fp8-fast';
-        config.agents.defaults.heartbeat.prompt = config.agents.defaults.heartbeat.prompt
-            || 'Check: Any blockers, opportunities, or progress updates needed?';
+// Root-level keys not in the OpenClaw schema
+delete config.heartbeat;
 
-        // Ensure Workers AI provider exists for heartbeat
-        const hbAccountId = process.env.CF_AI_GATEWAY_ACCOUNT_ID;
-        const hbGatewayId = process.env.CF_AI_GATEWAY_GATEWAY_ID;
-        const hbApiKey = process.env.CLOUDFLARE_AI_GATEWAY_API_KEY;
-        if (hbApiKey) {
-            config.models = config.models || {};
-            config.models.providers = config.models.providers || {};
-            if (!config.models.providers['cf-ai-gw-workers-ai']) {
-                config.models.providers['cf-ai-gw-workers-ai'] = {
-                    baseUrl: 'https://gateway.ai.cloudflare.com/v1/' + hbAccountId + '/' + hbGatewayId + '/workers-ai/v1',
-                    apiKey: hbApiKey,
-                    api: 'openai-completions',
-                    models: [{ id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', name: 'llama-3.3-70b', contextWindow: 131072, maxTokens: 4096 }],
-                };
+// agents.defaults keys not in schema
+if (config.agents && config.agents.defaults) {
+    delete config.agents.defaults.cache;
+
+    // Per-model keys not in schema
+    if (config.agents.defaults.models) {
+        const modelKeys = Object.keys(config.agents.defaults.models);
+        for (const mk of modelKeys) {
+            if (config.agents.defaults.models[mk]) {
+                delete config.agents.defaults.models[mk].cache;
+                delete config.agents.defaults.models[mk].cacheRetention;
             }
-            console.log('Heartbeat configured via Workers AI (free tier)');
         }
     }
-} else {
-    console.log('Heartbeat: AI Gateway not configured, skipping Workers AI heartbeat');
 }
-
-// ============================================================
-// TOKEN OPTIMIZATION: Prompt Caching (Part 6)
-// Schema: model entries use 'cacheRetention' (values: 'short', 'long', 'none')
-// NOT a boolean 'cache' key. 'short' = ~5min, 'long' = ~1hr.
-// Sonnet gets 'long' retention (worthwhile for expensive model).
-// Haiku gets 'none' (already very cheap, cache overhead not worth it).
-// ============================================================
-config.agents.defaults.models = config.agents.defaults.models || {};
-if (config.agents.defaults.models['anthropic/claude-sonnet-4-6']) {
-    config.agents.defaults.models['anthropic/claude-sonnet-4-6'].cacheRetention =
-        config.agents.defaults.models['anthropic/claude-sonnet-4-6'].cacheRetention || 'long';
-}
-if (config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001']) {
-    config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001'].cacheRetention =
-        config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001'].cacheRetention || 'none';
-}
-console.log('Prompt caching: Sonnet=long, Haiku=none');
+console.log('Config cleanup: stripped unsupported keys (heartbeat, cache, cacheRetention)');
 
 // Telegram configuration
 // Overwrite entire channel object to drop stale keys from old R2 backups
