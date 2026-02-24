@@ -277,16 +277,37 @@ console.log('Config cleanup: stripped unsupported keys (heartbeat, cache, cacheR
 // Overwrite entire channel object to drop stale keys from old R2 backups
 // that would fail OpenClaw's strict config validation (see #47)
 if (process.env.TELEGRAM_BOT_TOKEN) {
-    const dmPolicy = process.env.TELEGRAM_DM_POLICY || 'pairing';
+    const dmPolicy = process.env.TELEGRAM_DM_POLICY || 'open';
+    const groupPolicy = process.env.TELEGRAM_GROUP_POLICY || 'disabled';
     config.channels.telegram = {
         botToken: process.env.TELEGRAM_BOT_TOKEN,
         enabled: true,
         dmPolicy: dmPolicy,
+        groupPolicy: groupPolicy,
+        // Markdown rendering: 'code' wraps tables in code blocks for clean display
+        markdown: {
+            tables: process.env.TELEGRAM_MARKDOWN_TABLES || 'code',
+        },
+        // Link preview: show URL previews in messages
+        linkPreview: process.env.TELEGRAM_LINK_PREVIEW !== 'false',
+        // Media max size in MB (Telegram limit is 50MB for bots)
+        mediaMaxMb: parseInt(process.env.TELEGRAM_MEDIA_MAX_MB || '50', 10),
+        // History limit: max messages to keep in context (0 = unlimited)
+        historyLimit: parseInt(process.env.TELEGRAM_HISTORY_LIMIT || '100', 10),
+        // Show typing indicator while generating responses
+        useIndicator: process.env.TELEGRAM_USE_INDICATOR !== 'false',
+        // Delete bot messages on certain actions
+        actions: {
+            deleteMessage: process.env.TELEGRAM_DELETE_MESSAGE === 'true',
+        },
     };
     if (process.env.TELEGRAM_DM_ALLOW_FROM) {
         config.channels.telegram.allowFrom = process.env.TELEGRAM_DM_ALLOW_FROM.split(',');
     } else if (dmPolicy === 'open') {
         config.channels.telegram.allowFrom = ['*'];
+    }
+    if (process.env.TELEGRAM_GROUP_ALLOW_FROM) {
+        config.channels.telegram.groupAllowFrom = process.env.TELEGRAM_GROUP_ALLOW_FROM.split(',');
     }
 }
 
