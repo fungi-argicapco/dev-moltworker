@@ -284,29 +284,24 @@ if (process.env.TELEGRAM_BOT_TOKEN) {
         enabled: true,
         dmPolicy: dmPolicy,
         groupPolicy: groupPolicy,
-        // Markdown rendering: 'code' wraps tables in code blocks for clean display
-        markdown: {
-            tables: process.env.TELEGRAM_MARKDOWN_TABLES || 'code',
-        },
-        // Link preview: show URL previews in messages
+        // Link preview: show URL previews in outbound messages (default: true)
         linkPreview: process.env.TELEGRAM_LINK_PREVIEW !== 'false',
-        // Media max size in MB (Telegram limit is 50MB for bots)
+        // Media max size in MB (default 5 per docs, Telegram bot limit is 50)
         mediaMaxMb: parseInt(process.env.TELEGRAM_MEDIA_MAX_MB || '50', 10),
-        // History limit: max messages to keep in context (0 = unlimited)
+        // History limit: max messages to keep in context (default 50)
         historyLimit: parseInt(process.env.TELEGRAM_HISTORY_LIMIT || '100', 10),
-        // Delete bot messages on certain actions
-        actions: {
-            deleteMessage: process.env.TELEGRAM_DELETE_MESSAGE === 'true',
-        },
     };
+    // DM allowlist: numeric Telegram user IDs
     if (process.env.TELEGRAM_DM_ALLOW_FROM) {
         config.channels.telegram.allowFrom = process.env.TELEGRAM_DM_ALLOW_FROM.split(',');
     } else if (dmPolicy === 'open') {
         config.channels.telegram.allowFrom = ['*'];
     }
+    // Group sender allowlist: numeric Telegram user IDs
     if (process.env.TELEGRAM_GROUP_ALLOW_FROM) {
         config.channels.telegram.groupAllowFrom = process.env.TELEGRAM_GROUP_ALLOW_FROM.split(',');
     }
+    console.log('Telegram config: dmPolicy=' + dmPolicy + ' allowFrom=' + JSON.stringify(config.channels.telegram.allowFrom));
 }
 
 // Discord configuration
