@@ -256,10 +256,28 @@ app.all('*', async (c) => {
   }
 
   // Ensure moltbot is running (this will wait for startup)
-  try {
-    await ensureMoltbotGateway(sandbox, c.env);
-  } catch (error) {
-    console.error('[PROXY] Failed to start Moltbot:', error);
+  // Retry once on failure — handles stale DO state after a Durable Object reset
+  const MAX_RETRIES = 1;
+  let lastError: unknown = null;
+  // eslint-disable-next-line no-await-in-loop -- intentional retry loop
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      await ensureMoltbotGateway(sandbox, c.env);
+      lastError = null;
+      break;
+    } catch (error) {
+      lastError = error;
+      if (attempt < MAX_RETRIES) {
+        console.log('[PROXY] Gateway start failed, retrying in 2s...', error);
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+    }
+  }
+  if (lastError) {
+    const error = lastError;
+    console.error('[PROXY] Failed to start Moltbot after retries:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
     let hint = 'Check worker logs with: wrangler tail';
@@ -397,6 +415,29 @@ app.all('*', async (c) => {
       if (debugLogs) {
         console.log('[WS] Container closed:', event.code, event.reason);
       }
+
+      // Abnormal close (DO reset, container killed) — signal client to reconnect
+      if (event.code === 1006 || event.code === 1011 || event.code === 1001) {
+        console.log(
+          '[WS] Container closed abnormally (code:',
+          event.code,
+          '), signaling reconnect',
+        );
+        try {
+          if (serverWs.readyState === WebSocket.OPEN) {
+            serverWs.send(
+              JSON.stringify({
+                type: 'system',
+                event: 'reconnect',
+                reason: 'Container restarting — reconnecting automatically...',
+              }),
+            );
+          }
+        } catch {
+          /* best effort */
+        }
+      }
+
       // Transform the close reason (truncate to 123 bytes max for WebSocket spec)
       let reason = transformErrorMessage(event.reason, url.host);
       if (reason.length > 123) {
@@ -416,6 +457,20 @@ app.all('*', async (c) => {
 
     containerWs.addEventListener('error', (event) => {
       console.error('[WS] Container error:', event);
+      // Signal client to reconnect before closing
+      try {
+        if (serverWs.readyState === WebSocket.OPEN) {
+          serverWs.send(
+            JSON.stringify({
+              type: 'system',
+              event: 'reconnect',
+              reason: 'Connection lost — reconnecting automatically...',
+            }),
+          );
+        }
+      } catch {
+        /* best effort */
+      }
       serverWs.close(1011, 'Container error');
     });
 
