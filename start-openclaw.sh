@@ -277,7 +277,7 @@ console.log('Config cleanup: stripped unsupported keys (heartbeat, cache, cacheR
 // Overwrite entire channel object to drop stale keys from old R2 backups
 // that would fail OpenClaw's strict config validation (see #47)
 if (process.env.TELEGRAM_BOT_TOKEN) {
-    const dmPolicy = process.env.TELEGRAM_DM_POLICY || 'open';
+    const dmPolicy = process.env.TELEGRAM_DM_POLICY || 'pairing';
     const groupPolicy = process.env.TELEGRAM_GROUP_POLICY || 'disabled';
     config.channels.telegram = {
         botToken: process.env.TELEGRAM_BOT_TOKEN,
