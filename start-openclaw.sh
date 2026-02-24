@@ -438,6 +438,14 @@ if r2_configured; then
         while true; do
             sleep 30
 
+            # ---- PULL: fetch new files FROM R2 (bidirectional sync) ----
+            # Uses 'copy' (not sync) so locally-created files aren't deleted
+            if [ -d "$WORKSPACE_DIR" ]; then
+                rclone copy "r2:${R2_BUCKET}/workspace/" "$WORKSPACE_DIR/" \
+                    $RCLONE_FLAGS --exclude='.git/**' --exclude='node_modules/**' 2>>"$LOGFILE"
+            fi
+
+            # ---- PUSH: detect local changes and upload to R2 ----
             CHANGED=/tmp/.changed-files
             {
                 find "$CONFIG_DIR" -newer "$MARKER" -type f -printf '%P\n' 2>/dev/null
