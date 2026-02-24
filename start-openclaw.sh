@@ -294,8 +294,6 @@ if (process.env.TELEGRAM_BOT_TOKEN) {
         mediaMaxMb: parseInt(process.env.TELEGRAM_MEDIA_MAX_MB || '50', 10),
         // History limit: max messages to keep in context (0 = unlimited)
         historyLimit: parseInt(process.env.TELEGRAM_HISTORY_LIMIT || '100', 10),
-        // Show typing indicator while generating responses
-        useIndicator: process.env.TELEGRAM_USE_INDICATOR !== 'false',
         // Delete bot messages on certain actions
         actions: {
             deleteMessage: process.env.TELEGRAM_DELETE_MESSAGE === 'true',
