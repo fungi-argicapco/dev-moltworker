@@ -248,6 +248,15 @@ config.agents.defaults.models['anthropic/claude-opus-4-6'] =
 console.log('Model aliases configured: haiku, sonnet, opus');
 
 // ============================================================
+// STABILITY: Concurrency Limits (prevent Anthropic 429 storms)
+// ============================================================
+config.agents.defaults.maxConcurrent = parseInt(process.env.MAX_CONCURRENT || '2', 10);
+config.agents.defaults.subagents = config.agents.defaults.subagents || {};
+config.agents.defaults.subagents.maxConcurrent = parseInt(process.env.SUBAGENT_MAX_CONCURRENT || '2', 10);
+config.agents.defaults.subagents.model = process.env.SUBAGENT_MODEL || 'anthropic/claude-haiku-4-5-20251001';
+console.log('Concurrency: maxConcurrent=' + config.agents.defaults.maxConcurrent + ' subagents.maxConcurrent=' + config.agents.defaults.subagents.maxConcurrent + ' subagent model=' + config.agents.defaults.subagents.model);
+
+// ============================================================
 // CONFIG CLEANUP: Remove unsupported keys
 // The R2 backup may contain stale keys from previous deploys.
 // OpenClaw's strict config validation rejects unknown keys and
@@ -277,7 +286,7 @@ console.log('Config cleanup: stripped unsupported keys (heartbeat, cache, cacheR
 // Overwrite entire channel object to drop stale keys from old R2 backups
 // that would fail OpenClaw's strict config validation (see #47)
 if (process.env.TELEGRAM_BOT_TOKEN) {
-    const dmPolicy = process.env.TELEGRAM_DM_POLICY || 'pairing';
+    const dmPolicy = process.env.TELEGRAM_DM_POLICY || 'allowlist';
     const groupPolicy = process.env.TELEGRAM_GROUP_POLICY || 'disabled';
     config.channels.telegram = {
         botToken: process.env.TELEGRAM_BOT_TOKEN,
@@ -294,6 +303,9 @@ if (process.env.TELEGRAM_BOT_TOKEN) {
     // DM allowlist: numeric Telegram user IDs
     if (process.env.TELEGRAM_DM_ALLOW_FROM) {
         config.channels.telegram.allowFrom = process.env.TELEGRAM_DM_ALLOW_FROM.split(',');
+    } else if (dmPolicy === 'allowlist') {
+        // Default owner access — always allow Joshua's Telegram ID
+        config.channels.telegram.allowFrom = ['8476535456'];
     } else if (dmPolicy === 'open') {
         config.channels.telegram.allowFrom = ['*'];
     }
