@@ -207,31 +207,29 @@ if (modelOverride) {
     }
 
     if (baseUrl && apiKey) {
-        const api = gwProvider === 'anthropic' ? 'anthropic-messages' : 'openai-completions';
         const providerName = 'cf-ai-gw-' + gwProvider;
 
-        // Unified Billing: OpenClaw requires apiKey for its auth check.
-        // We set apiKey to the CF token (passes OpenClaw's auth layer),
-        // AND add cf-aig-authorization header (tells AI Gateway to use
-        // Unified Billing instead of treating apiKey as an Anthropic key).
+        // Unified Billing via OpenAI-compatible endpoint.
+        // The Anthropic-native endpoint sends apiKey as x-api-key (rejected by
+        // Anthropic since it's a CF token). The compat endpoint sends apiKey as
+        // Authorization: Bearer, which the AI Gateway accepts for Unified Billing.
+        // Models use "anthropic/model-id" format in the request body.
+        const compatBaseUrl = 'https://gateway.ai.cloudflare.com/v1/' + accountId + '/' + gatewayId;
         config.models = config.models || {};
         config.models.providers = config.models.providers || {};
         config.models.providers[providerName] = {
-            baseUrl: baseUrl,
+            baseUrl: compatBaseUrl,
             apiKey: apiKey,
-            api: api,
-            headers: {
-                'cf-aig-authorization': 'Bearer ' + apiKey,
-            },
+            api: 'openai-completions',
             models: [
-                { id: modelId, name: modelId, contextWindow: 131072, maxTokens: 8192 },
-                { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5', contextWindow: 200000, maxTokens: 8192 },
+                { id: gwProvider + '/' + modelId, name: modelId, contextWindow: 131072, maxTokens: 8192 },
+                { id: gwProvider + '/claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5', contextWindow: 200000, maxTokens: 8192 },
             ],
         };
         config.agents = config.agents || {};
         config.agents.defaults = config.agents.defaults || {};
-        config.agents.defaults.model = { primary: providerName + '/' + modelId };
-        console.log('AI Gateway (Unified Billing): provider=' + providerName + ' model=' + modelId + ' via ' + baseUrl);
+        config.agents.defaults.model = { primary: providerName + '/' + gwProvider + '/' + modelId };
+        console.log('AI Gateway (Unified Billing/compat): provider=' + providerName + ' model=' + gwProvider + '/' + modelId + ' via ' + compatBaseUrl);
     } else {
         console.warn('CF_AI_GATEWAY_MODEL set but missing required config (account ID, gateway ID, or API key)');
     }
@@ -263,7 +261,7 @@ console.log('Model aliases configured: haiku, sonnet, opus');
 config.agents.defaults.maxConcurrent = parseInt(process.env.MAX_CONCURRENT || '2', 10);
 config.agents.defaults.subagents = config.agents.defaults.subagents || {};
 config.agents.defaults.subagents.maxConcurrent = parseInt(process.env.SUBAGENT_MAX_CONCURRENT || '2', 10);
-config.agents.defaults.subagents.model = process.env.SUBAGENT_MODEL || 'cf-ai-gw-anthropic/claude-haiku-4-5-20251001';
+config.agents.defaults.subagents.model = process.env.SUBAGENT_MODEL || 'cf-ai-gw-anthropic/anthropic/claude-haiku-4-5-20251001';
 console.log('Concurrency: maxConcurrent=' + config.agents.defaults.maxConcurrent + ' subagents.maxConcurrent=' + config.agents.defaults.subagents.maxConcurrent + ' subagent model=' + config.agents.defaults.subagents.model);
 
 // ============================================================
