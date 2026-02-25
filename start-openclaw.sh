@@ -210,18 +210,27 @@ if (modelOverride) {
         const api = gwProvider === 'anthropic' ? 'anthropic-messages' : 'openai-completions';
         const providerName = 'cf-ai-gw-' + gwProvider;
 
+        // Unified Billing: authenticate via cf-aig-authorization header,
+        // NOT via apiKey. Cloudflare handles upstream provider auth using
+        // purchased AI Gateway credits. The CLOUDFLARE_AI_GATEWAY_API_KEY
+        // env var holds a Cloudflare API token (not an Anthropic key).
         config.models = config.models || {};
         config.models.providers = config.models.providers || {};
         config.models.providers[providerName] = {
             baseUrl: baseUrl,
-            apiKey: apiKey,
             api: api,
-            models: [{ id: modelId, name: modelId, contextWindow: 131072, maxTokens: 8192 }],
+            headers: {
+                'cf-aig-authorization': 'Bearer ' + apiKey,
+            },
+            models: [
+                { id: modelId, name: modelId, contextWindow: 131072, maxTokens: 8192 },
+                { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5', contextWindow: 200000, maxTokens: 8192 },
+            ],
         };
         config.agents = config.agents || {};
         config.agents.defaults = config.agents.defaults || {};
         config.agents.defaults.model = { primary: providerName + '/' + modelId };
-        console.log('AI Gateway model override: provider=' + providerName + ' model=' + modelId + ' via ' + baseUrl);
+        console.log('AI Gateway (Unified Billing): provider=' + providerName + ' model=' + modelId + ' via ' + baseUrl);
     } else {
         console.warn('CF_AI_GATEWAY_MODEL set but missing required config (account ID, gateway ID, or API key)');
     }
@@ -253,7 +262,7 @@ console.log('Model aliases configured: haiku, sonnet, opus');
 config.agents.defaults.maxConcurrent = parseInt(process.env.MAX_CONCURRENT || '2', 10);
 config.agents.defaults.subagents = config.agents.defaults.subagents || {};
 config.agents.defaults.subagents.maxConcurrent = parseInt(process.env.SUBAGENT_MAX_CONCURRENT || '2', 10);
-config.agents.defaults.subagents.model = process.env.SUBAGENT_MODEL || 'anthropic/claude-haiku-4-5-20251001';
+config.agents.defaults.subagents.model = process.env.SUBAGENT_MODEL || 'cf-ai-gw-anthropic/claude-haiku-4-5-20251001';
 console.log('Concurrency: maxConcurrent=' + config.agents.defaults.maxConcurrent + ' subagents.maxConcurrent=' + config.agents.defaults.subagents.maxConcurrent + ' subagent model=' + config.agents.defaults.subagents.model);
 
 // ============================================================
