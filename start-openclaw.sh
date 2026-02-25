@@ -210,14 +210,15 @@ if (modelOverride) {
         const api = gwProvider === 'anthropic' ? 'anthropic-messages' : 'openai-completions';
         const providerName = 'cf-ai-gw-' + gwProvider;
 
-        // Unified Billing: authenticate via cf-aig-authorization header,
-        // NOT via apiKey. Cloudflare handles upstream provider auth using
-        // purchased AI Gateway credits. The CLOUDFLARE_AI_GATEWAY_API_KEY
-        // env var holds a Cloudflare API token (not an Anthropic key).
+        // Unified Billing: OpenClaw requires apiKey for its auth check.
+        // We set apiKey to the CF token (passes OpenClaw's auth layer),
+        // AND add cf-aig-authorization header (tells AI Gateway to use
+        // Unified Billing instead of treating apiKey as an Anthropic key).
         config.models = config.models || {};
         config.models.providers = config.models.providers || {};
         config.models.providers[providerName] = {
             baseUrl: baseUrl,
+            apiKey: apiKey,
             api: api,
             headers: {
                 'cf-aig-authorization': 'Bearer ' + apiKey,
