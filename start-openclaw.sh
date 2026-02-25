@@ -214,10 +214,10 @@ if (modelOverride) {
         // API Key: CLOUDFLARE_AI_GATEWAY_API_KEY (provider API key for requests through Gateway)
         // For Unified Billing: cf-aig-authorization header authenticates with the gateway
         const providerName = 'cloudflare-ai-gateway';
+        // Read separate CF gateway auth token (for authenticated gateways)
+        const gwAuthToken = process.env.CF_AI_GATEWAY_AUTH_TOKEN;
 
-        config.models = config.models || {};
-        config.models.providers = config.models.providers || {};
-        config.models.providers[providerName] = {
+        const providerConfig = {
             baseUrl: baseUrl,
             apiKey: apiKey,
             api: 'anthropic-messages',
@@ -226,6 +226,19 @@ if (modelOverride) {
                 { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5', contextWindow: 200000, maxTokens: 8192 },
             ],
         };
+
+        // Per docs: if gateway auth is enabled, add cf-aig-authorization header
+        // (in addition to the provider API key)
+        if (gwAuthToken) {
+            providerConfig.headers = {
+                'cf-aig-authorization': 'Bearer ' + gwAuthToken,
+            };
+            console.log('AI Gateway: authenticated gateway enabled');
+        }
+
+        config.models = config.models || {};
+        config.models.providers = config.models.providers || {};
+        config.models.providers[providerName] = providerConfig;
         config.agents = config.agents || {};
         config.agents.defaults = config.agents.defaults || {};
         config.agents.defaults.model = { primary: providerName + '/' + modelId };
