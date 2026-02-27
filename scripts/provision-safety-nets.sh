@@ -158,12 +158,12 @@ job_exists=$(echo "$existing_jobs" | jq -r ".result[] | select(.destination_conf
 if [[ -n "$job_exists" ]]; then
   skip "Logpush job already exists (ID: ${job_exists})"
 else
-  info "Logpush requires R2 API credentials for the destination."
-  info "Create an R2 API token with Edit permissions for ${LOGS_BUCKET},"
-  info "then set R2_LOGPUSH_ACCESS_KEY_ID and R2_LOGPUSH_SECRET_ACCESS_KEY."
+  # Accept R2_LOGPUSH_* or fall back to standard R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY
+  LP_KEY_ID="${R2_LOGPUSH_ACCESS_KEY_ID:-${R2_ACCESS_KEY_ID:-}}"
+  LP_SECRET="${R2_LOGPUSH_SECRET_ACCESS_KEY:-${R2_SECRET_ACCESS_KEY:-}}"
 
-  if [[ -n "${R2_LOGPUSH_ACCESS_KEY_ID:-}" ]] && [[ -n "${R2_LOGPUSH_SECRET_ACCESS_KEY:-}" ]]; then
-    DEST_CONF="r2://${LOGS_BUCKET}/workers-logs/{DATE}?account-id=${ACCOUNT_ID}&access-key-id=${R2_LOGPUSH_ACCESS_KEY_ID}&secret-access-key=${R2_LOGPUSH_SECRET_ACCESS_KEY}"
+  if [[ -n "$LP_KEY_ID" ]] && [[ -n "$LP_SECRET" ]]; then
+    DEST_CONF="r2://${LOGS_BUCKET}/workers-logs/{DATE}?account-id=${ACCOUNT_ID}&access-key-id=${LP_KEY_ID}&secret-access-key=${LP_SECRET}"
     create_job=$(cf_api POST "/logpush/jobs" \
       -d "{
         \"name\": \"${WORKER_NAME}-traces\",
@@ -178,7 +178,7 @@ else
       ok "Created Logpush job: workers_trace_events → ${LOGS_BUCKET}"
     fi
   else
-    info "Skipped: Set R2_LOGPUSH_ACCESS_KEY_ID + R2_LOGPUSH_SECRET_ACCESS_KEY to enable"
+    info "Skipped: Set R2_ACCESS_KEY_ID + R2_SECRET_ACCESS_KEY (or R2_LOGPUSH_*) to enable"
   fi
 fi
 
@@ -189,30 +189,30 @@ section "4. Alerting: Notification Policies"
 # Check existing policies
 existing_policies=$(cf_api GET "/alerting/v3/policies" 2>/dev/null || echo '{"result":[]}')
 
-# 4a. Workers error rate alert
-error_alert_name="[${ENV}] Workers Error Rate"
+# 4a. Workers Observability alert
+error_alert_name="[${ENV}] Workers Observability"
 error_alert_exists=$(echo "$existing_policies" | jq -r ".result[] | select(.name == \"${error_alert_name}\") | .id" 2>/dev/null || echo "")
 
 if [[ -n "$error_alert_exists" ]]; then
-  skip "Error rate alert already exists (ID: ${error_alert_exists})"
+  skip "Workers Observability alert already exists (ID: ${error_alert_exists})"
 else
   create_alert=$(cf_api POST "/alerting/v3/policies" \
     -d "{
       \"name\": \"${error_alert_name}\",
-      \"alert_type\": \"workers_alert\",
+      \"alert_type\": \"workers_observability_alert\",
       \"enabled\": true,
       \"mechanisms\": {
         \"email\": [{\"id\": \"${ALERT_EMAIL}\"}]
       },
       \"filters\": {
-        \"slo\": [\"99.0\"]
+        \"status\": [\"FIRING_FAILED\"]
       },
-      \"description\": \"Alert when ${WORKER_NAME} error rate exceeds SLO\"
+      \"description\": \"Alert when Workers Observability detects failures for ${WORKER_NAME}\"
     }" 2>/dev/null || true)
   if echo "$create_alert" | jq -e '.success' > /dev/null 2>&1; then
     ok "Created alert: ${error_alert_name}"
   else
-    info "Workers alert creation may require specific plan features"
+    info "Workers Observability alert creation failed (check plan features)"
   fi
 fi
 
@@ -231,12 +231,16 @@ else
       \"mechanisms\": {
         \"email\": [{\"id\": \"${ALERT_EMAIL}\"}]
       },
-      \"description\": \"Alert on AI Gateway usage spikes for ${GATEWAY_ID}\"
+      \"filters\": {
+        \"product\": [\"workers\"],
+        \"limit\": [\"100.0\"]
+      },
+      \"description\": \"Alert on AI Gateway / Workers usage spikes for ${GATEWAY_ID}\"
     }" 2>/dev/null || true)
   if echo "$create_usage" | jq -e '.success' > /dev/null 2>&1; then
     ok "Created alert: ${usage_alert_name}"
   else
-    info "Billing alert creation may require specific plan features"
+    info "Billing usage alert creation failed (check plan features)"
   fi
 fi
 
