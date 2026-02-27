@@ -232,10 +232,10 @@ else
         \"email\": [{\"id\": \"${ALERT_EMAIL}\"}]
       },
       \"filters\": {
-        \"product\": [\"workers\"],
-        \"limit\": [\"100.0\"]
+        \"product\": [\"worker_standard_cpu_ms\"],
+        \"limit\": [\"1000000\"]
       },
-      \"description\": \"Alert on AI Gateway / Workers usage spikes for ${GATEWAY_ID}\"
+      \"description\": \"Alert when Workers CPU milliseconds exceed 1M for ${GATEWAY_ID}\"
     }" 2>/dev/null || true)
   if echo "$create_usage" | jq -e '.success' > /dev/null 2>&1; then
     ok "Created alert: ${usage_alert_name}"
