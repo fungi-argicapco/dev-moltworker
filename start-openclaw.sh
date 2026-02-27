@@ -351,6 +351,13 @@ EOFPATCH
 # - USER.md: Create default template if missing
 # - Skills: Symlink agents/ into skills/ for OpenClaw discovery
 # ============================================================
+if [ -f "$WORKSPACE_DIR/AGENTS.md" ]; then
+    echo "AGENTS.md: workspace system prompt loaded ($(wc -l < $WORKSPACE_DIR/AGENTS.md) lines)"
+else
+    echo "AGENTS.md: WARNING — not found at $WORKSPACE_DIR/AGENTS.md"
+    echo "  The agent won't know to read SOUL.md without this file!"
+fi
+
 if [ -f "$WORKSPACE_DIR/SOUL.md" ]; then
     echo "SOUL.md: using Omega persona ($(wc -l < $WORKSPACE_DIR/SOUL.md) lines)"
 else

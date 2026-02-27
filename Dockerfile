@@ -41,6 +41,7 @@ COPY skills/ /root/clawd/skills/
 
 # Copy Omega persona and agent skills (multi-agent ready)
 COPY SOUL.md /root/clawd/SOUL.md
+COPY workspace/AGENTS.md /root/clawd/AGENTS.md
 COPY agents/ /root/clawd/agents/
 
 # Set working directory
