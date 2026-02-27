@@ -224,30 +224,30 @@ console.log('Concurrency: maxConcurrent=' + config.agents.defaults.maxConcurrent
 // messages. This is forward-compatible with multi-tenant clients.
 // To add a client agent later, push to agents.list + bindings
 // and add their Telegram bot under channels.telegram.accounts.
+//
+// NOTE: agents.list and bindings are NOT YET supported by the
+// currently installed OpenClaw version. Kept as commented-out
+// reference for when the schema is extended.
 // ============================================================
-config.agents.list = config.agents.list || [];
-const omegaIdx = config.agents.list.findIndex(a => a.id === 'omega');
-if (omegaIdx === -1) {
-    config.agents.list.push({
-        id: 'omega',
-        workspace: '/root/clawd',
-        default: true,
-        sandbox: { mode: 'off' },
-    });
-    console.log('Multi-agent: Omega registered as default agent');
-} else {
-    console.log('Multi-agent: Omega already registered');
-}
-
-// Bindings: route inbound messages to agents by channel + account
-config.bindings = config.bindings || [];
-if (!config.bindings.some(b => b.agentId === 'omega')) {
-    config.bindings.push({
-        agentId: 'omega',
-        match: { channel: 'telegram', accountId: 'default' },
-    });
-    console.log('Multi-agent: Omega bound to telegram/default');
-}
+// FUTURE: Uncomment when OpenClaw supports multi-agent schema
+// config.agents.list = config.agents.list || [];
+// const omegaIdx = config.agents.list.findIndex(a => a.id === 'omega');
+// if (omegaIdx === -1) {
+//     config.agents.list.push({
+//         id: 'omega',
+//         workspace: '/root/clawd',
+//         default: true,
+//         sandbox: { mode: 'off' },
+//     });
+// }
+// config.bindings = config.bindings || [];
+// if (!config.bindings.some(b => b.agentId === 'omega')) {
+//     config.bindings.push({
+//         agentId: 'omega',
+//         match: { channel: 'telegram', accountId: 'default' },
+//     });
+// }
+console.log('Multi-agent: Omega workspace configured (skills + SOUL.md)');
 
 // ============================================================
 // CONFIG CLEANUP: Remove unsupported keys
@@ -275,11 +275,14 @@ if (config.agents && config.agents.defaults) {
 }
 console.log('Config cleanup: stripped unsupported keys (heartbeat, cache, cacheRetention)');
 
-// Telegram configuration (multi-account ready)
-// Uses OpenClaw's accounts structure for multi-agent routing.
-// Each agent gets its own Telegram bot via BotFather.
+// Telegram configuration
+// Uses flat format compatible with current OpenClaw version.
 // HARDSHELL_TELEGRAM_BOT_TOKEN = Omega's dedicated bot (HardshellStagingBot)
 // TELEGRAM_BOT_TOKEN = fallback for single-agent / dev mode
+//
+// FUTURE (multi-agent): When OpenClaw supports channels.telegram.accounts,
+// switch to: config.channels.telegram = { accounts: { default: {...}, 'client-acme': {...} } }
+// and add bindings[] to route each account to its agent.
 const tgBotToken = process.env.HARDSHELL_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
 if (tgBotToken) {
     const dmPolicy = process.env.TELEGRAM_DM_POLICY || 'allowlist';
@@ -295,31 +298,22 @@ if (tgBotToken) {
         allowFrom = ['*'];
     }
 
-    // Multi-account structure (forward-compatible with client agents)
-    // To add a client bot later: add to accounts + add binding + add to agents.list
-    const defaultAccount = {
+    // Flat format (current OpenClaw)
+    config.channels.telegram = {
         botToken: tgBotToken,
         dmPolicy: dmPolicy,
         linkPreview: process.env.TELEGRAM_LINK_PREVIEW !== 'false',
         mediaMaxMb: parseInt(process.env.TELEGRAM_MEDIA_MAX_MB || '50', 10),
         historyLimit: parseInt(process.env.TELEGRAM_HISTORY_LIMIT || '100', 10),
     };
-    if (allowFrom) defaultAccount.allowFrom = allowFrom;
+    if (allowFrom) config.channels.telegram.allowFrom = allowFrom;
     if (groupPolicy && groupPolicy !== 'disabled') {
-        defaultAccount.groupPolicy = groupPolicy;
+        config.channels.telegram.groupPolicy = groupPolicy;
     }
     if (process.env.TELEGRAM_GROUP_ALLOW_FROM) {
-        defaultAccount.groupAllowFrom = process.env.TELEGRAM_GROUP_ALLOW_FROM.split(',');
+        config.channels.telegram.groupAllowFrom = process.env.TELEGRAM_GROUP_ALLOW_FROM.split(',');
     }
-
-    config.channels.telegram = {
-        accounts: {
-            default: defaultAccount,
-            // Future client accounts added here by provisioning script:
-            // 'client-acme': { botToken: '...', dmPolicy: 'allowlist', allowFrom: ['tg:xxx'] },
-        },
-    };
-    console.log('Telegram config (multi-account): default dmPolicy=' + dmPolicy + ' allowFrom=' + JSON.stringify(allowFrom));
+    console.log('Telegram config: dmPolicy=' + dmPolicy + ' allowFrom=' + JSON.stringify(allowFrom));
 }
 
 // Discord configuration
