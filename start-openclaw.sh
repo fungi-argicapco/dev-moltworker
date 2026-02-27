@@ -429,6 +429,52 @@ fi
 
 
 # ============================================================
+# MULTI-AGENT: Create Omega as a named agent
+# openclaw agents add <id> creates a named agent with its own
+# workspace. We point omega's workspace to /root/clawd/ which
+# has all our baked-in files (SOUL.md, IDENTITY.md, etc.)
+# For multi-tenant: each client gets their own
+#   openclaw agents add <client-name> --workspace /root/<client>/
+# ============================================================
+echo "Setting up Omega agent..."
+
+# Create omega agent (idempotent — OpenClaw skips if it already exists)
+openclaw agents add omega 2>/dev/null || true
+
+# Point omega's workspace to our baked-in files
+# The agent's workspace is at ~/.openclaw/agents/omega/
+OMEGA_AGENT_DIR="$HOME/.openclaw/agents/omega"
+if [ -d "$OMEGA_AGENT_DIR" ]; then
+    # Copy our workspace files into the omega agent's workspace
+    for md_file in "$WORKSPACE_DIR"/*.md; do
+        if [ -f "$md_file" ]; then
+            cp "$md_file" "$OMEGA_AGENT_DIR/$(basename "$md_file")"
+        fi
+    done
+    # Also copy SOUL.md from root if it exists
+    if [ -f "/root/clawd/SOUL.md" ]; then
+        cp "/root/clawd/SOUL.md" "$OMEGA_AGENT_DIR/SOUL.md"
+    fi
+    echo "Omega agent: workspace populated ($(ls -1 $OMEGA_AGENT_DIR/*.md 2>/dev/null | wc -l) files)"
+
+    # Link skills into omega's workspace
+    mkdir -p "$OMEGA_AGENT_DIR/skills"
+    if [ -d "$WORKSPACE_DIR/agents" ]; then
+        for agent_dir in "$WORKSPACE_DIR"/agents/*/; do
+            skill_name=$(basename "$agent_dir")
+            if [ -f "$agent_dir/SKILL.md" ] && [ ! -e "$OMEGA_AGENT_DIR/skills/$skill_name" ]; then
+                ln -s "$agent_dir" "$OMEGA_AGENT_DIR/skills/$skill_name"
+            fi
+        done
+        echo "Omega agent: $(ls -1 $OMEGA_AGENT_DIR/skills/ 2>/dev/null | wc -l) skills linked"
+    fi
+    mkdir -p "$OMEGA_AGENT_DIR/memory"
+else
+    echo "Omega agent: WARNING — agent dir not found at $OMEGA_AGENT_DIR"
+    echo "  The 'openclaw agents add omega' command may not have created it."
+fi
+
+# ============================================================
 # START GATEWAY
 # ============================================================
 echo "Starting OpenClaw Gateway..."
