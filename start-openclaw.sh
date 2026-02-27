@@ -356,29 +356,37 @@ EOFPATCH
 # WORKSPACE: Copy baked-in files to OpenClaw's default workspace
 # OpenClaw reads from ~/.openclaw/workspace/ by default.
 # Our files are baked into /root/clawd/ via Dockerfile.
-# Strategy: Copy AGENTS.md + SOUL.md into the default workspace so
-# the agent finds them automatically on session start.
+# Strategy: Copy ALL .md files from baked workspace to default
+# workspace so the agent finds them automatically on session start.
+# For multi-tenant: each client gets their own workspace dir with
+# their own set of these files (IDENTITY.md, SOUL.md, USER.md, etc.)
 # ============================================================
 OC_WORKSPACE="/root/.openclaw/workspace"
 mkdir -p "$OC_WORKSPACE"
 mkdir -p "$OC_WORKSPACE/skills"
 mkdir -p "$OC_WORKSPACE/memory"
 
-# Copy AGENTS.md (system prompt — tells agent to read SOUL.md)
-if [ -f "$WORKSPACE_DIR/AGENTS.md" ]; then
-    cp "$WORKSPACE_DIR/AGENTS.md" "$OC_WORKSPACE/AGENTS.md"
-    echo "AGENTS.md: copied to $OC_WORKSPACE ($(wc -l < $OC_WORKSPACE/AGENTS.md) lines)"
-else
-    echo "AGENTS.md: WARNING — not found at $WORKSPACE_DIR/AGENTS.md"
-    echo "  The agent won't know to read SOUL.md without this file!"
+# Copy ALL workspace .md files from baked-in dir to default workspace
+WORKSPACE_FILES_COPIED=0
+for md_file in "$WORKSPACE_DIR"/*.md; do
+    if [ -f "$md_file" ]; then
+        fname=$(basename "$md_file")
+        cp "$md_file" "$OC_WORKSPACE/$fname"
+        WORKSPACE_FILES_COPIED=$((WORKSPACE_FILES_COPIED + 1))
+    fi
+done
+echo "Workspace: copied $WORKSPACE_FILES_COPIED files to $OC_WORKSPACE"
+
+# Also ensure SOUL.md is in the workspace (may be at root level, not in workspace/)
+if [ -f "$WORKSPACE_DIR/SOUL.md" ]; then
+    echo "  SOUL.md: $(wc -l < $OC_WORKSPACE/SOUL.md) lines"
+elif [ -f "/root/clawd/SOUL.md" ] && [ ! -f "$OC_WORKSPACE/SOUL.md" ]; then
+    cp "/root/clawd/SOUL.md" "$OC_WORKSPACE/SOUL.md"
+    echo "  SOUL.md: copied from /root/clawd/ (fallback)"
 fi
 
-# Copy SOUL.md (Omega persona)
-if [ -f "$WORKSPACE_DIR/SOUL.md" ]; then
-    cp "$WORKSPACE_DIR/SOUL.md" "$OC_WORKSPACE/SOUL.md"
-    echo "SOUL.md: copied to $OC_WORKSPACE ($(wc -l < $OC_WORKSPACE/SOUL.md) lines)"
-else
-    echo "SOUL.md: WARNING — not found at $WORKSPACE_DIR/SOUL.md, creating minimal fallback"
+if [ ! -f "$OC_WORKSPACE/SOUL.md" ]; then
+    echo "  SOUL.md: WARNING — not found! Creating minimal fallback"
     cat > "$OC_WORKSPACE/SOUL.md" << 'EOFSOUL'
 # SOUL.md — Omega (Fallback)
 You are Omega, the master orchestrator for Stream Kinetics.
@@ -413,29 +421,6 @@ if [ -d "$AGENTS_SRC" ]; then
     echo "Skills: $(ls -1 $SKILLS_DIR | wc -l) skills available"
 else
     echo "Skills: no agents directory found at $AGENTS_SRC"
-fi
-
-if [ ! -f "$OC_WORKSPACE/USER.md" ]; then
-    echo "Creating default USER.md template..."
-    cat > "$OC_WORKSPACE/USER.md" << 'EOFUSER'
-# USER.md
-
-- **Name:** [YOUR NAME]
-- **Timezone:** [YOUR TIMEZONE]
-- **Mission:** [WHAT YOU'RE BUILDING]
-
-## Success Metrics
-
-- [METRIC 1]
-- [METRIC 2]
-- [METRIC 3]
-
-## Notes
-
-Customize this file with your information. Keep it lean —
-every line costs tokens on every request.
-EOFUSER
-    echo "USER.md created"
 fi
 
 # NOTE: Background R2 sync is now handled by the Worker via its R2 binding.

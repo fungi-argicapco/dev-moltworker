@@ -39,9 +39,11 @@ RUN chmod +x /usr/local/bin/start-openclaw.sh
 # Copy custom skills (ClawHub and legacy)
 COPY skills/ /root/clawd/skills/
 
-# Copy Omega persona and agent skills (multi-agent ready)
+# Copy Omega persona and workspace files (multi-agent ready)
+# workspace/ contains: AGENTS.md, IDENTITY.md, SOUL.md, TOOLS.md, USER.md,
+#                       HEARTBEAT.md, BOOTSTRAP.md, MEMORY.md
 COPY SOUL.md /root/clawd/SOUL.md
-COPY workspace/AGENTS.md /root/clawd/AGENTS.md
+COPY workspace/ /root/clawd/
 COPY agents/ /root/clawd/agents/
 
 # Set working directory
