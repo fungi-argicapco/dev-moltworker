@@ -34,7 +34,7 @@ API_BASE="https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}"
 case "$ENV" in
   stg)
     GATEWAY_ID="hardshell-stg-aigw"
-    LOGS_BUCKET="hardshell-stg-logs"
+    LOGS_BUCKET="hardshell-logs"
     WORKER_NAME="hardshell-stg-gateway"
     RATE_LIMIT=100          # requests per interval
     RATE_INTERVAL=60        # seconds
@@ -43,7 +43,7 @@ case "$ENV" in
     ;;
   prod)
     GATEWAY_ID="hardshell-prod-aigw"
-    LOGS_BUCKET="hardshell-prod-logs"
+    LOGS_BUCKET="hardshell-logs"
     WORKER_NAME="hardshell-prod-gateway"
     RATE_LIMIT=500
     RATE_INTERVAL=60
