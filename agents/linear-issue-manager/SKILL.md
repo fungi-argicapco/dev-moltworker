@@ -1,45 +1,100 @@
 ---
 name: linear-issue-manager
-description: Manage all Linear workspace operations (CRUD, templating, batch updates, approval workflows). Use when creating, updating, linking issues across initiatives; populating discovery frameworks; or managing Linear as single source of truth for client projects, proposals, and engagement timelines.
+description: Manage all Linear workspace operations — issues, projects, teams, priorities, and standup. Use for creating, updating, searching, and tracking issues across all stream-kinetics initiatives. Supports human-friendly status mapping, team auto-discovery with caching, daily standup summaries, and the Standard Client Discovery Framework.
 ---
 
 # Linear Issue Manager
 
-Autonomous agent for managing stream-kinetics Linear workspace across all initiatives (contentguru, metamirror, wealthinnovation, fungiagricap, tabbytarot, hardshell).
+Comprehensive Linear management for the stream-kinetics workspace. All operations via `node scripts/linear-api.js <command>`.
 
-## Core Operations
+## Quick Commands
 
-### Create Issues at Scale
-- Batch create parent + child issue hierarchies
-- Populate with templated content
-- Link to initiatives, projects, teams
-- Set status workflows
+```bash
+node scripts/linear-api.js my-issues    # My open issues (all teams)
+node scripts/linear-api.js my-todos     # My unstarted issues only
+node scripts/linear-api.js urgent       # All P1 issues across workspace
+node scripts/linear-api.js standup      # Daily standup: Todo/In Progress/Done
+```
 
-### Populate Issue Content
-- Fill discovery questionnaires (SK-3)
-- Populate tech stack matrices (SK-4)
-- Create pain point canvases (SK-5)
-- Define data models (SK-6)
-- Generate onboarding workflows (SK-8)
+## Issue Operations
 
-### Update Workflow States
-- Move issues through approval gates
-- Assign to team members
-- Add comments for stakeholder updates
-- Track decision gates
+```bash
+# View issue details
+node scripts/linear-api.js issue SK-123
 
-### Link & Reference
-- Create parent-child relationships
-- Link related issues
-- Reference documents/resources
-- Build issue dependency chains
+# Create an issue
+node scripts/linear-api.js create --team SK --title "New task" --priority high --status todo
 
-## Workflow: Populate Discovery Framework
+# Update issue
+node scripts/linear-api.js update SK-123 --status done --priority low
+
+# Change status (shorthand)
+node scripts/linear-api.js status SK-123 done
+
+# Set priority (shorthand)
+node scripts/linear-api.js priority SK-123 urgent
+
+# Assign to user
+node scripts/linear-api.js assign SK-123 me
+node scripts/linear-api.js assign SK-123 josh@streamkinetics.com
+
+# Add comment
+node scripts/linear-api.js comment SK-123 "Fixed in latest deploy"
+
+# Search
+node scripts/linear-api.js search "onboarding workflow"
+```
+
+## Team & Project Operations
+
+```bash
+node scripts/linear-api.js teams                # List all teams (cached)
+node scripts/linear-api.js projects              # List all projects
+node scripts/linear-api.js project "hardshell"   # Issues for a project
+```
+
+## Priority Levels
+
+| Level | Value | Use for |
+|-------|-------|---------|
+| urgent | 1 | Production issues, blockers |
+| high | 2 | This week, important |
+| medium | 3 | This sprint/cycle |
+| low | 4 | Nice to have |
+| none | 0 | Backlog, someday |
+
+## Status Mapping
+
+Human-friendly names → auto-resolved to team-specific workflow state IDs:
+
+| Name | Linear Category |
+|------|----------------|
+| backlog | Backlog |
+| todo | Unstarted |
+| progress | Started |
+| review | Started |
+| done | Completed |
+| cancelled | Canceled |
+
+## Teams (Auto-Discovered)
+
+Team keys and IDs are fetched via API and cached locally. Use `teams` command to refresh.
+
+Quick reference:
+- **SK** — stream-kinetics (Workspace Admin)
+- **CG** — contentguru.ai (Social Intelligence)
+- **MM** — metamirror.ai (Self Intelligence)
+- **WI** — wealthinnovation.ai (Personal Wealth)
+- **FAC** — fungiagricap.com (Physical/Real Estate)
+- **TAR** — tabbytarot.fun (Spiritual Intelligence)
+- **HAR** — hardshell (OpenClaw Hosting)
+
+## Discovery Framework Workflow
 
 **Input:** JSON discovery object (client_name, tech_stack, pain_points, etc.)
+**Script:** `node scripts/batch-populate-discovery.js <client_name> <initiative_key> [discovery.json]`
 
-**Output:** Linked Linear issue hierarchy
-
+Creates linked Linear issue hierarchy:
 ```
 SK-2 (Parent: Standard Client Discovery Intake Framework)
 ├── SK-3 (Discovery Questionnaire Template) ← populated with client Q&A
@@ -49,26 +104,15 @@ SK-2 (Parent: Standard Client Discovery Intake Framework)
 └── SK-8 (Client Onboarding Workflow) ← 6-week timeline
 ```
 
-## Tools & Scripts
+## Environment
 
-See `scripts/` directory:
-- `linear-api.js` - GraphQL query/mutation wrapper
-- `batch-issue-create.js` - Bulk issue creation with hierarchy
-- `populate-issue.js` - Update issue description with formatted content
-- `link-issues.js` - Create parent-child and reference links
+- **Env var:** `LINEAR_API_KEY` (required)
+- **Default workspace:** stream-kinetics
+- **API:** Linear GraphQL (`api.linear.app/graphql`)
+- **Caching:** Teams + workflow states cached to `/tmp/linear-*.json` (1h TTL)
 
-## API Token
+## Reference Files
 
-Use environment variable: `LINEAR_API_TOKEN`
-Default workspace: `stream-kinetics`
-
-## Key Teams & Projects
-
-See `references/linear-workspace.md` for full team/project IDs and structure.
-
-Quick reference:
-- **SK (stream-kinetics team)**: Framework & playbooks
-- **MM (metamirror team)**: Dr. Monique Lowe neuropsych
-- **CG (contentguru team)**: Seattle Unity
-- **MM-8**: Monique's parent engagement issue
-- **CG-1**: Diane presentation parent issue
+- `references/linear-workspace.md` — Full team/project IDs and structure
+- `scripts/linear-api.js` — Core CLI tool (GraphQL wrapper + all commands)
+- `scripts/batch-populate-discovery.js` — Discovery framework batch creation
