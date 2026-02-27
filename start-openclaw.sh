@@ -169,6 +169,17 @@ if (process.env.OPENCLAW_DEV_MODE === 'true') {
     config.gateway.controlUi.allowInsecureAuth = true;
 }
 
+// When behind CF Access (token auth configured), disable device identity checks.
+// CF Access handles identity; device pairing is redundant for the Control UI.
+// Note: allowInsecureAuth only affects HTTP context, NOT device identity.
+// dangerouslyDisableDeviceAuth fully disables device key validation and pairing.
+// Channel auth (Telegram/Discord/Slack) is unaffected — they use dmPolicy separately.
+if (process.env.OPENCLAW_GATEWAY_TOKEN) {
+    config.gateway.controlUi = config.gateway.controlUi || {};
+    config.gateway.controlUi.allowInsecureAuth = true;
+    config.gateway.controlUi.dangerouslyDisableDeviceAuth = true;
+}
+
 // Legacy AI Gateway base URL override:
 // ANTHROPIC_BASE_URL is picked up natively by the Anthropic SDK,
 // so we don't need to patch the provider config. Writing a provider

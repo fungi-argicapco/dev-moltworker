@@ -295,6 +295,26 @@ adminApi.post('/gateway/restart', async (c) => {
   }
 });
 
+// POST /api/admin/container/restart - Destroy and recreate the container
+// Use this after deploying a new container image to force eviction of the old instance.
+// The next request will cold-start a new container with the latest image.
+adminApi.post('/container/restart', async (c) => {
+  const sandbox = c.get('sandbox');
+
+  try {
+    console.log('[ADMIN] Destroying sandbox container for image refresh...');
+    await sandbox.destroy();
+    return c.json({
+      success: true,
+      message: 'Container destroyed. Next request will start a fresh container with the latest image.',
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[ADMIN] Container destroy failed:', errorMessage);
+    return c.json({ error: errorMessage }, 500);
+  }
+});
+
 // Mount admin API routes under /admin
 api.route('/admin', adminApi);
 

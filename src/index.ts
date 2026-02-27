@@ -345,7 +345,11 @@ app.all('*', async (c) => {
       console.log('[WS] serverWs.readyState:', serverWs.readyState);
     }
 
-    // Relay messages from client to container
+    // Relay messages from client to container.
+    // When CF Access authenticated the user but no ?token= was in the URL,
+    // inject the gateway token into the OpenClaw 'connect' protocol message.
+    // OpenClaw validates tokens at connect.params.auth.token (per docs).
+    const shouldInjectToken = !!c.env.MOLTBOT_GATEWAY_TOKEN && !url.searchParams.has('token');
     serverWs.addEventListener('message', (event) => {
       if (debugLogs) {
         console.log(
@@ -354,8 +358,27 @@ app.all('*', async (c) => {
           typeof event.data === 'string' ? event.data.slice(0, 200) : '(binary)',
         );
       }
+      let data = event.data;
+
+      // Inject gateway token into the OpenClaw 'connect' message
+      if (shouldInjectToken && typeof data === 'string') {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.method === 'connect' && parsed.params) {
+            if (!parsed.params.auth) parsed.params.auth = {};
+            parsed.params.auth.token = c.env.MOLTBOT_GATEWAY_TOKEN;
+            data = JSON.stringify(parsed);
+            if (debugLogs) {
+              console.log('[WS] Injected gateway token into connect.params.auth.token');
+            }
+          }
+        } catch {
+          /* not JSON, pass through */
+        }
+      }
+
       if (containerWs.readyState === WebSocket.OPEN) {
-        containerWs.send(event.data);
+        containerWs.send(data);
       } else if (debugLogs) {
         console.log('[WS] Container not open, readyState:', containerWs.readyState);
       }
