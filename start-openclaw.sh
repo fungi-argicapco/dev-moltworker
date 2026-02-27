@@ -438,12 +438,14 @@ fi
 # ============================================================
 echo "Setting up Omega agent..."
 
-# Create omega agent (idempotent — OpenClaw skips if it already exists)
-openclaw agents add omega 2>/dev/null || true
+# Create omega agent (non-interactive — pipe Enter to accept default workspace)
+echo "" | openclaw agents add omega 2>&1 || true
 
-# Point omega's workspace to our baked-in files
-# The agent's workspace is at ~/.openclaw/agents/omega/
-OMEGA_AGENT_DIR="$HOME/.openclaw/agents/omega"
+# The agent workspace could be at either location depending on OpenClaw version
+OMEGA_AGENT_DIR="$HOME/.openclaw/workspace-omega"
+if [ ! -d "$OMEGA_AGENT_DIR" ]; then
+    OMEGA_AGENT_DIR="$HOME/.openclaw/agents/omega"
+fi
 if [ -d "$OMEGA_AGENT_DIR" ]; then
     # Copy our workspace files into the omega agent's workspace
     for md_file in "$WORKSPACE_DIR"/*.md; do
