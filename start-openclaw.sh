@@ -200,6 +200,13 @@ if (modelOverride) {
 // Model aliases for on-demand switching ("use sonnet", "use haiku", "use opus")
 config.agents = config.agents || {};
 config.agents.defaults = config.agents.defaults || {};
+
+// CRITICAL: Override workspace path to /root/clawd where SOUL.md, AGENTS.md,
+// skills, and agents are baked in via Dockerfile. OpenClaw defaults to
+// ~/.openclaw/workspace which is empty in a container.
+config.agents.defaults.workspace = '/root/clawd';
+console.log('Workspace: /root/clawd (overridden from default)');
+
 config.agents.defaults.models = config.agents.defaults.models || {};
 config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001'] =
     config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001'] || { alias: 'haiku' };
