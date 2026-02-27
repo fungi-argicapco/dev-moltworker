@@ -5,52 +5,52 @@ description: Manage all Linear workspace operations — issues, projects, teams,
 
 # Linear Issue Manager
 
-Comprehensive Linear management for the stream-kinetics workspace. All operations via `node scripts/linear-api.js <command>`.
+Comprehensive Linear management for the stream-kinetics workspace. All operations via `node scripts/linear-api.cjs <command>`.
 
 ## Quick Commands
 
 ```bash
-node scripts/linear-api.js my-issues    # My open issues (all teams)
-node scripts/linear-api.js my-todos     # My unstarted issues only
-node scripts/linear-api.js urgent       # All P1 issues across workspace
-node scripts/linear-api.js standup      # Daily standup: Todo/In Progress/Done
+node scripts/linear-api.cjs my-issues    # My open issues (all teams)
+node scripts/linear-api.cjs my-todos     # My unstarted issues only
+node scripts/linear-api.cjs urgent       # All P1 issues across workspace
+node scripts/linear-api.cjs standup      # Daily standup: Todo/In Progress/Done
 ```
 
 ## Issue Operations
 
 ```bash
 # View issue details
-node scripts/linear-api.js issue SK-123
+node scripts/linear-api.cjs issue SK-123
 
 # Create an issue
-node scripts/linear-api.js create --team SK --title "New task" --priority high --status todo
+node scripts/linear-api.cjs create --team SK --title "New task" --priority high --status todo
 
 # Update issue
-node scripts/linear-api.js update SK-123 --status done --priority low
+node scripts/linear-api.cjs update SK-123 --status done --priority low
 
 # Change status (shorthand)
-node scripts/linear-api.js status SK-123 done
+node scripts/linear-api.cjs status SK-123 done
 
 # Set priority (shorthand)
-node scripts/linear-api.js priority SK-123 urgent
+node scripts/linear-api.cjs priority SK-123 urgent
 
 # Assign to user
-node scripts/linear-api.js assign SK-123 me
-node scripts/linear-api.js assign SK-123 josh@streamkinetics.com
+node scripts/linear-api.cjs assign SK-123 me
+node scripts/linear-api.cjs assign SK-123 josh@streamkinetics.com
 
 # Add comment
-node scripts/linear-api.js comment SK-123 "Fixed in latest deploy"
+node scripts/linear-api.cjs comment SK-123 "Fixed in latest deploy"
 
 # Search
-node scripts/linear-api.js search "onboarding workflow"
+node scripts/linear-api.cjs search "onboarding workflow"
 ```
 
 ## Team & Project Operations
 
 ```bash
-node scripts/linear-api.js teams                # List all teams (cached)
-node scripts/linear-api.js projects              # List all projects
-node scripts/linear-api.js project "hardshell"   # Issues for a project
+node scripts/linear-api.cjs teams                # List all teams (cached)
+node scripts/linear-api.cjs projects              # List all projects
+node scripts/linear-api.cjs project "hardshell"   # Issues for a project
 ```
 
 ## Priority Levels
@@ -92,7 +92,7 @@ Quick reference:
 ## Discovery Framework Workflow
 
 **Input:** JSON discovery object (client_name, tech_stack, pain_points, etc.)
-**Script:** `node scripts/batch-populate-discovery.js <client_name> <initiative_key> [discovery.json]`
+**Script:** `node scripts/batch-populate-discovery.cjs <client_name> <initiative_key> [discovery.json]`
 
 Creates linked Linear issue hierarchy:
 ```
@@ -114,5 +114,5 @@ SK-2 (Parent: Standard Client Discovery Intake Framework)
 ## Reference Files
 
 - `references/linear-workspace.md` — Full team/project IDs and structure
-- `scripts/linear-api.js` — Core CLI tool (GraphQL wrapper + all commands)
-- `scripts/batch-populate-discovery.js` — Discovery framework batch creation
+- `scripts/linear-api.cjs` — Core CLI tool (GraphQL wrapper + all commands)
+- `scripts/batch-populate-discovery.cjs` — Discovery framework batch creation

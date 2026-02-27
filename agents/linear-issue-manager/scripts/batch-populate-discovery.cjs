@@ -6,7 +6,7 @@
  * Output: Linked Linear issue hierarchy (SK-2 parent with SK-3 through SK-8 children)
  */
 
-const { createIssue, updateIssue, getTeamByKey } = require('./linear-api');
+const { createIssue, updateIssue, getTeamByKey } = require('./linear-api.cjs');
 
 /**
  * Populate entire discovery framework
@@ -133,9 +133,9 @@ ${discovery.pain_points?.map((p, i) => `${i + 1}. ${p}`).join('\n') || '- (To be
 function formatTechStackMatrix(techStack) {
   const current = techStack?.current || {};
   const desired = techStack?.desired || {};
-  
+
   const allCategories = new Set([...Object.keys(current), ...Object.keys(desired)]);
-  
+
   let matrix = `# Tech Stack Assessment Matrix
 
 ## Current vs. Desired
@@ -297,7 +297,7 @@ function formatOnboardingWorkflow(discovery) {
  */
 async function main() {
   const args = process.argv.slice(2);
-  
+
   if (args.length === 0) {
     console.log(`Usage:
   node batch-populate-discovery.js <client_name> <initiative_key> [discovery.json]
