@@ -1,0 +1,68 @@
+{
+  "version": "1.0",
+  "description": "Cloudflare KV schema for Telegram pairing state",
+  "namespace": "telegram-pairing",
+  "keyFormat": "telegram:{accountId}:{userId}",
+  "valueSchema": {
+    "type": "object",
+    "properties": {
+      "userId": {
+        "type": "string",
+        "description": "Telegram user ID (numeric)"
+      },
+      "accountId": {
+        "type": "string",
+        "description": "OpenClaw Telegram account ID (default or named)"
+      },
+      "approved": {
+        "type": "boolean",
+        "description": "Whether this user is approved to use the bot"
+      },
+      "approvedAt": {
+        "type": "string",
+        "format": "date-time",
+        "description": "ISO timestamp when approval was granted"
+      },
+      "username": {
+        "type": "string",
+        "description": "Telegram username (cached for reference)"
+      },
+      "metadata": {
+        "type": "object",
+        "description": "Additional tracking (first message, approval method, etc.)"
+      }
+    },
+    "required": ["userId", "accountId", "approved"]
+  },
+  "examples": {
+    "approved_user": {
+      "key": "telegram:default:8476535456",
+      "value": {
+        "userId": "8476535456",
+        "accountId": "default",
+        "approved": true,
+        "approvedAt": "2026-02-24T18:00:00Z",
+        "username": "example_user",
+        "metadata": {
+          "approvalMethod": "manual",
+          "approvedBy": "admin"
+        }
+      }
+    },
+    "pending_user": {
+      "key": "telegram:default:9999999999",
+      "value": {
+        "userId": "9999999999",
+        "accountId": "default",
+        "approved": false,
+        "username": "new_user"
+      }
+    }
+  },
+  "operations": {
+    "store_approval": "Write when user is approved in pairing flow",
+    "sync_on_startup": "Read all approved users, merge into config.channels.telegram.allowFrom",
+    "list_approved": "Get all approved users for audit",
+    "revoke_approval": "Set approved=false (or delete key)"
+  }
+}
