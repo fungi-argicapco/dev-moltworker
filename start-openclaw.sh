@@ -219,6 +219,37 @@ config.agents.defaults.subagents.model = process.env.SUBAGENT_MODEL || 'cloudfla
 console.log('Concurrency: maxConcurrent=' + config.agents.defaults.maxConcurrent + ' subagents.maxConcurrent=' + config.agents.defaults.subagents.maxConcurrent + ' subagent model=' + config.agents.defaults.subagents.model);
 
 // ============================================================
+// MULTI-AGENT: Omega as default orchestrator (Hardshell Phase 2C)
+// Architecture: agents.list[] defines agents, bindings[] routes
+// messages. This is forward-compatible with multi-tenant clients.
+// To add a client agent later, push to agents.list + bindings
+// and add their Telegram bot under channels.telegram.accounts.
+// ============================================================
+config.agents.list = config.agents.list || [];
+const omegaIdx = config.agents.list.findIndex(a => a.id === 'omega');
+if (omegaIdx === -1) {
+    config.agents.list.push({
+        id: 'omega',
+        workspace: '/root/clawd',
+        default: true,
+        sandbox: { mode: 'off' },
+    });
+    console.log('Multi-agent: Omega registered as default agent');
+} else {
+    console.log('Multi-agent: Omega already registered');
+}
+
+// Bindings: route inbound messages to agents by channel + account
+config.bindings = config.bindings || [];
+if (!config.bindings.some(b => b.agentId === 'omega')) {
+    config.bindings.push({
+        agentId: 'omega',
+        match: { channel: 'telegram', accountId: 'default' },
+    });
+    console.log('Multi-agent: Omega bound to telegram/default');
+}
+
+// ============================================================
 // CONFIG CLEANUP: Remove unsupported keys
 // The R2 backup may contain stale keys from previous deploys.
 // OpenClaw's strict config validation rejects unknown keys and
@@ -244,38 +275,51 @@ if (config.agents && config.agents.defaults) {
 }
 console.log('Config cleanup: stripped unsupported keys (heartbeat, cache, cacheRetention)');
 
-// Telegram configuration
-// Overwrite entire channel object to drop stale keys from old R2 backups
-// that would fail OpenClaw's strict config validation (see #47)
-if (process.env.TELEGRAM_BOT_TOKEN) {
+// Telegram configuration (multi-account ready)
+// Uses OpenClaw's accounts structure for multi-agent routing.
+// Each agent gets its own Telegram bot via BotFather.
+// HARDSHELL_TELEGRAM_BOT_TOKEN = Omega's dedicated bot (HardshellStagingBot)
+// TELEGRAM_BOT_TOKEN = fallback for single-agent / dev mode
+const tgBotToken = process.env.HARDSHELL_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
+if (tgBotToken) {
     const dmPolicy = process.env.TELEGRAM_DM_POLICY || 'allowlist';
     const groupPolicy = process.env.TELEGRAM_GROUP_POLICY || 'disabled';
-    config.channels.telegram = {
-        botToken: process.env.TELEGRAM_BOT_TOKEN,
-        enabled: true,
+
+    // Build DM allowlist
+    let allowFrom;
+    if (process.env.TELEGRAM_DM_ALLOW_FROM) {
+        allowFrom = process.env.TELEGRAM_DM_ALLOW_FROM.split(',');
+    } else if (dmPolicy === 'allowlist') {
+        allowFrom = ['8476535456']; // Default owner: Joshua's Telegram ID
+    } else if (dmPolicy === 'open') {
+        allowFrom = ['*'];
+    }
+
+    // Multi-account structure (forward-compatible with client agents)
+    // To add a client bot later: add to accounts + add binding + add to agents.list
+    const defaultAccount = {
+        botToken: tgBotToken,
         dmPolicy: dmPolicy,
-        groupPolicy: groupPolicy,
-        // Link preview: show URL previews in outbound messages (default: true)
         linkPreview: process.env.TELEGRAM_LINK_PREVIEW !== 'false',
-        // Media max size in MB (default 5 per docs, Telegram bot limit is 50)
         mediaMaxMb: parseInt(process.env.TELEGRAM_MEDIA_MAX_MB || '50', 10),
-        // History limit: max messages to keep in context (default 50)
         historyLimit: parseInt(process.env.TELEGRAM_HISTORY_LIMIT || '100', 10),
     };
-    // DM allowlist: numeric Telegram user IDs
-    if (process.env.TELEGRAM_DM_ALLOW_FROM) {
-        config.channels.telegram.allowFrom = process.env.TELEGRAM_DM_ALLOW_FROM.split(',');
-    } else if (dmPolicy === 'allowlist') {
-        // Default owner access — always allow Joshua's Telegram ID
-        config.channels.telegram.allowFrom = ['8476535456'];
-    } else if (dmPolicy === 'open') {
-        config.channels.telegram.allowFrom = ['*'];
+    if (allowFrom) defaultAccount.allowFrom = allowFrom;
+    if (groupPolicy && groupPolicy !== 'disabled') {
+        defaultAccount.groupPolicy = groupPolicy;
     }
-    // Group sender allowlist: numeric Telegram user IDs
     if (process.env.TELEGRAM_GROUP_ALLOW_FROM) {
-        config.channels.telegram.groupAllowFrom = process.env.TELEGRAM_GROUP_ALLOW_FROM.split(',');
+        defaultAccount.groupAllowFrom = process.env.TELEGRAM_GROUP_ALLOW_FROM.split(',');
     }
-    console.log('Telegram config: dmPolicy=' + dmPolicy + ' allowFrom=' + JSON.stringify(config.channels.telegram.allowFrom));
+
+    config.channels.telegram = {
+        accounts: {
+            default: defaultAccount,
+            // Future client accounts added here by provisioning script:
+            // 'client-acme': { botToken: '...', dmPolicy: 'allowlist', allowFrom: ['tg:xxx'] },
+        },
+    };
+    console.log('Telegram config (multi-account): default dmPolicy=' + dmPolicy + ' allowFrom=' + JSON.stringify(allowFrom));
 }
 
 // Discord configuration
@@ -308,72 +352,43 @@ console.log('Token optimization: model routing + heartbeat + caching configured'
 EOFPATCH
 
 # ============================================================
-# TOKEN OPTIMIZATION: Workspace Templates (Parts 1, 4, 5)
-# Create default SOUL.md and USER.md with session init rules,
-# model selection rules, and rate limits if they don't exist.
+# WORKSPACE: SOUL.md + USER.md + Skills
+# - SOUL.md: Use Omega's persona from /root/clawd/SOUL.md (baked in via Dockerfile)
+# - USER.md: Create default template if missing
+# - Skills: Symlink agents/ into skills/ for OpenClaw discovery
 # ============================================================
-if [ ! -f "$WORKSPACE_DIR/SOUL.md" ]; then
-    echo "Creating default SOUL.md with token optimization rules..."
+if [ -f "$WORKSPACE_DIR/SOUL.md" ]; then
+    echo "SOUL.md: using Omega persona ($(wc -l < $WORKSPACE_DIR/SOUL.md) lines)"
+else
+    echo "SOUL.md: WARNING — not found at $WORKSPACE_DIR/SOUL.md, creating minimal fallback"
     cat > "$WORKSPACE_DIR/SOUL.md" << 'EOFSOUL'
-# SOUL.md
-
-## Core Principles
-
-- Be helpful, accurate, and efficient
-- Minimize token usage without sacrificing quality
-- Use the right model for the right task
-
-## SESSION INITIALIZATION RULE
-
-On every session start:
-1. Load ONLY these files:
-   - SOUL.md
-   - USER.md
-   - IDENTITY.md
-   - memory/YYYY-MM-DD.md (if it exists)
-
-2. DO NOT auto-load:
-   - MEMORY.md
-   - Session history
-   - Prior messages
-   - Previous tool outputs
-
-3. When user asks about prior context:
-   - Use memory_search() on demand
-   - Pull only the relevant snippet with memory_get()
-   - Don't load the whole file
-
-4. Update memory/YYYY-MM-DD.md at end of session with:
-   - What you worked on
-   - Decisions made
-   - Leads generated
-   - Blockers
-   - Next steps
-
-## MODEL SELECTION RULE
-
-Default: Always use Haiku
-Switch to Sonnet ONLY when:
-- Architecture decisions
-- Production code review
-- Security analysis
-- Complex debugging/reasoning
-- Strategic multi-project decisions
-
-When in doubt: Try Haiku first.
-
-## RATE LIMITS
-
-- 5 seconds minimum between API calls
-- 10 seconds between web searches
-- Max 5 searches per batch, then 2-minute break
-- Batch similar work (one request for 10 leads, not 10 requests)
-- If you hit 429 error: STOP, wait 5 minutes, retry
-
-DAILY BUDGET: $5 (warning at 75%)
-MONTHLY BUDGET: $200 (warning at 75%)
+# SOUL.md — Omega (Fallback)
+You are Omega, the master orchestrator for Stream Kinetics.
+Be helpful, accurate, and efficient. Minimize token usage.
 EOFSOUL
-    echo "SOUL.md created"
+fi
+
+# ============================================================
+# SKILLS: Symlink agent skills into workspace
+# Each agent directory with a SKILL.md becomes a loadable skill.
+# This is idempotent — existing symlinks are preserved.
+# For multi-tenant: client agents get their own workspace with
+# a subset of skills. Omega gets all 12.
+# ============================================================
+AGENTS_SRC="$WORKSPACE_DIR/agents"
+if [ -d "$AGENTS_SRC" ]; then
+    for agent_dir in "$AGENTS_SRC"/*/; do
+        skill_name=$(basename "$agent_dir")
+        if [ -f "$agent_dir/SKILL.md" ]; then
+            if [ ! -e "$SKILLS_DIR/$skill_name" ]; then
+                ln -s "$agent_dir" "$SKILLS_DIR/$skill_name"
+                echo "Skill linked: $skill_name"
+            fi
+        fi
+    done
+    echo "Skills: $(ls -1 $SKILLS_DIR | wc -l) skills available"
+else
+    echo "Skills: no agents directory found at $AGENTS_SRC"
 fi
 
 if [ ! -f "$WORKSPACE_DIR/USER.md" ]; then
