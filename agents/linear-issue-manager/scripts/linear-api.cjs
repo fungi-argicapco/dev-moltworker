@@ -21,7 +21,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 // ── Config ──────────────────────────────────────────────────
-const API_TOKEN = process.env.LINEAR_API_KEY || process.env.LINEAR_API_TOKEN;
+const API_TOKEN = process.env.LINEAR_API_KEY;
 if (!API_TOKEN) throw new Error('LINEAR_API_KEY environment variable is required');
 
 const CACHE_DIR = '/tmp';
