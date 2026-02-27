@@ -353,23 +353,33 @@ console.log('Token optimization: model routing + heartbeat + caching configured'
 EOFPATCH
 
 # ============================================================
-# WORKSPACE: SOUL.md + USER.md + Skills
-# - SOUL.md: Use Omega's persona from /root/clawd/SOUL.md (baked in via Dockerfile)
-# - USER.md: Create default template if missing
-# - Skills: Symlink agents/ into skills/ for OpenClaw discovery
+# WORKSPACE: Copy baked-in files to OpenClaw's default workspace
+# OpenClaw reads from ~/.openclaw/workspace/ by default.
+# Our files are baked into /root/clawd/ via Dockerfile.
+# Strategy: Copy AGENTS.md + SOUL.md into the default workspace so
+# the agent finds them automatically on session start.
 # ============================================================
+OC_WORKSPACE="/root/.openclaw/workspace"
+mkdir -p "$OC_WORKSPACE"
+mkdir -p "$OC_WORKSPACE/skills"
+mkdir -p "$OC_WORKSPACE/memory"
+
+# Copy AGENTS.md (system prompt — tells agent to read SOUL.md)
 if [ -f "$WORKSPACE_DIR/AGENTS.md" ]; then
-    echo "AGENTS.md: workspace system prompt loaded ($(wc -l < $WORKSPACE_DIR/AGENTS.md) lines)"
+    cp "$WORKSPACE_DIR/AGENTS.md" "$OC_WORKSPACE/AGENTS.md"
+    echo "AGENTS.md: copied to $OC_WORKSPACE ($(wc -l < $OC_WORKSPACE/AGENTS.md) lines)"
 else
     echo "AGENTS.md: WARNING — not found at $WORKSPACE_DIR/AGENTS.md"
     echo "  The agent won't know to read SOUL.md without this file!"
 fi
 
+# Copy SOUL.md (Omega persona)
 if [ -f "$WORKSPACE_DIR/SOUL.md" ]; then
-    echo "SOUL.md: using Omega persona ($(wc -l < $WORKSPACE_DIR/SOUL.md) lines)"
+    cp "$WORKSPACE_DIR/SOUL.md" "$OC_WORKSPACE/SOUL.md"
+    echo "SOUL.md: copied to $OC_WORKSPACE ($(wc -l < $OC_WORKSPACE/SOUL.md) lines)"
 else
     echo "SOUL.md: WARNING — not found at $WORKSPACE_DIR/SOUL.md, creating minimal fallback"
-    cat > "$WORKSPACE_DIR/SOUL.md" << 'EOFSOUL'
+    cat > "$OC_WORKSPACE/SOUL.md" << 'EOFSOUL'
 # SOUL.md — Omega (Fallback)
 You are Omega, the master orchestrator for Stream Kinetics.
 Be helpful, accurate, and efficient. Minimize token usage.
@@ -377,7 +387,7 @@ EOFSOUL
 fi
 
 # ============================================================
-# SKILLS: Symlink agent skills into workspace
+# SKILLS: Symlink agent skills into BOTH workspace directories
 # Each agent directory with a SKILL.md becomes a loadable skill.
 # This is idempotent — existing symlinks are preserved.
 # For multi-tenant: client agents get their own workspace with
@@ -388,9 +398,15 @@ if [ -d "$AGENTS_SRC" ]; then
     for agent_dir in "$AGENTS_SRC"/*/; do
         skill_name=$(basename "$agent_dir")
         if [ -f "$agent_dir/SKILL.md" ]; then
+            # Link into baked skills dir
             if [ ! -e "$SKILLS_DIR/$skill_name" ]; then
                 ln -s "$agent_dir" "$SKILLS_DIR/$skill_name"
-                echo "Skill linked: $skill_name"
+                echo "Skill linked: $skill_name → $SKILLS_DIR/"
+            fi
+            # Also link into default workspace skills dir
+            if [ ! -e "$OC_WORKSPACE/skills/$skill_name" ]; then
+                ln -s "$agent_dir" "$OC_WORKSPACE/skills/$skill_name"
+                echo "Skill linked: $skill_name → $OC_WORKSPACE/skills/"
             fi
         fi
     done
@@ -399,9 +415,9 @@ else
     echo "Skills: no agents directory found at $AGENTS_SRC"
 fi
 
-if [ ! -f "$WORKSPACE_DIR/USER.md" ]; then
+if [ ! -f "$OC_WORKSPACE/USER.md" ]; then
     echo "Creating default USER.md template..."
-    cat > "$WORKSPACE_DIR/USER.md" << 'EOFUSER'
+    cat > "$OC_WORKSPACE/USER.md" << 'EOFUSER'
 # USER.md
 
 - **Name:** [YOUR NAME]
