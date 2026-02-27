@@ -129,8 +129,8 @@ async function untarToContainer(
   // Ensure target parent directory exists
   await sandbox.exec(`mkdir -p ${targetDir}`);
 
-  // Extract
-  const result = await sandbox.exec(`tar xzf ${tarFile} -C / 2>&1`, { timeout: 120000 });
+  // Extract to the target directory (tarball contains relative paths)
+  const result = await sandbox.exec(`tar xzf ${tarFile} -C ${targetDir} 2>&1`, { timeout: 120000 });
 
   // Clean up
   await sandbox.exec(`rm -f ${tarFile}`);
@@ -209,11 +209,11 @@ export async function syncToR2(sandbox: Sandbox, bucket: R2Bucket): Promise<Sync
 export async function restoreFromR2(sandbox: Sandbox, bucket: R2Bucket): Promise<SyncResult> {
   let restoredAny = false;
 
-  // Restore config
+  // Restore config — extract to /root (tarball contains .openclaw/...)
   const configObj = await bucket.get(R2_KEYS.config);
   if (configObj) {
     console.log('[SYNC] Restoring config from R2...');
-    const ok = await untarToContainer(sandbox, configObj.body, '/');
+    const ok = await untarToContainer(sandbox, configObj.body, '/root');
     if (ok) {
       restoredAny = true;
       console.log('[SYNC] Config restored');
@@ -224,22 +224,22 @@ export async function restoreFromR2(sandbox: Sandbox, bucket: R2Bucket): Promise
     console.log('[SYNC] No config backup found in R2, starting fresh');
   }
 
-  // Restore workspace
+  // Restore workspace — extract to /root (tarball contains clawd/...)
   const workspaceObj = await bucket.get(R2_KEYS.workspace);
   if (workspaceObj) {
     console.log('[SYNC] Restoring workspace from R2...');
-    const ok = await untarToContainer(sandbox, workspaceObj.body, '/');
+    const ok = await untarToContainer(sandbox, workspaceObj.body, '/root');
     if (ok) {
       restoredAny = true;
       console.log('[SYNC] Workspace restored');
     }
   }
 
-  // Restore skills
+  // Restore skills — extract to /root/clawd (tarball contains skills/...)
   const skillsObj = await bucket.get(R2_KEYS.skills);
   if (skillsObj) {
     console.log('[SYNC] Restoring skills from R2...');
-    const ok = await untarToContainer(sandbox, skillsObj.body, '/');
+    const ok = await untarToContainer(sandbox, skillsObj.body, '/root/clawd');
     if (ok) {
       restoredAny = true;
       console.log('[SYNC] Skills restored');

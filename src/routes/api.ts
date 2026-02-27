@@ -197,16 +197,31 @@ adminApi.post('/devices/approve-all', async (c) => {
 // GET /api/admin/storage - Get R2 storage status and last sync time
 adminApi.get('/storage', async (c) => {
   const sandbox = c.get('sandbox');
+  const bucket = c.env.MOLTBOT_BUCKET;
 
   let lastSync: string | null = null;
+
+  // First try reading from R2 metadata (persists across container restarts)
   try {
-    const result = await sandbox.exec('cat /tmp/.last-sync 2>/dev/null || echo ""');
-    const timestamp = result.stdout?.trim();
-    if (timestamp && timestamp !== '') {
-      lastSync = timestamp;
+    const head = await bucket.head('backups/config.tar.gz');
+    if (head?.customMetadata?.timestamp) {
+      lastSync = head.customMetadata.timestamp;
     }
   } catch {
-    // Ignore errors checking sync status
+    // Ignore R2 errors
+  }
+
+  // Fall back to container-local timestamp (set during current session)
+  if (!lastSync) {
+    try {
+      const result = await sandbox.exec('cat /tmp/.last-sync 2>/dev/null || echo ""');
+      const timestamp = result.stdout?.trim();
+      if (timestamp && timestamp !== '') {
+        lastSync = timestamp;
+      }
+    } catch {
+      // Ignore errors checking sync status
+    }
   }
 
   return c.json({
