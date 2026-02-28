@@ -56,6 +56,8 @@
     "telegram-command-menu": "free",
     "ciso-agent": "mid",
     "policy-compliance-agent": "mid",
+    "network-security-agent": "light",
+    "incident-response-agent": "mid",
     "coo-agent": "mid",
     "sre-agent": "light",
     "devops-agent": "free",

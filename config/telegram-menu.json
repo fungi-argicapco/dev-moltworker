@@ -157,8 +157,18 @@
         ],
         [
           {
+            "text": "🌐 Network Security",
+            "callback_data": "agent:network-security:control_report"
+          },
+          {
             "text": "📋 Policy Review",
             "callback_data": "agent:policy-compliance:policy_status"
+          }
+        ],
+        [
+          {
+            "text": "🚨 Incident Status",
+            "callback_data": "agent:incident-response:active_incidents"
           },
           {
             "text": "📊 SOC 2 Status",
@@ -267,7 +277,7 @@
       ]
     },
     "team_menu": {
-      "text": "👥 **Agent Team Overview**\n40 agents across 8 teams:",
+      "text": "👥 **Agent Team Overview**\n42 agents across 8 teams:",
       "buttons": [
         [
           {
@@ -281,7 +291,7 @@
         ],
         [
           {
-            "text": "🛡️ Security (4)",
+            "text": "🛡️ Security (6)",
             "callback_data": "menu:security"
           },
           {

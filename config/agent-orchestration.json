@@ -75,7 +75,9 @@
       "members": [
         "zero-trust-agent",
         "cloudflare-security-agent",
-        "policy-compliance-agent"
+        "policy-compliance-agent",
+        "network-security-agent",
+        "incident-response-agent"
       ],
       "spawn_config": {
         "max_depth": 2,

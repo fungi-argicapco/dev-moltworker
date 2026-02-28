@@ -1,3 +1,9 @@
+---
+name: zero-trust-agent
+model_tier: light
+description: Continuous validation of Cloudflare API token health, expiry, and scope integrity. AES-256-GCM encrypted vault with live CF API validation, anomaly prioritization (P0-P2), and composite trust scoring.
+---
+
 # Zero Trust Agent
 
 > **Stream Kinetics** · Security Infrastructure · Phase 1

@@ -1,5 +1,6 @@
 ---
 name: cloudflare-security-agent
+model_tier: light
 description: Comprehensive Cloudflare security auditing, compliance assessment, and hardening recommendations. Use when evaluating account security posture, identifying vulnerabilities, checking API token exposure, validating encryption/access controls, or generating security compliance reports.
 ---
 
