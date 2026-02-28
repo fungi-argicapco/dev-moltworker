@@ -239,12 +239,22 @@
         ],
         [
           {
+            "text": "💚 Client Health",
+            "callback_data": "agent:customer-success:health_dashboard"
+          },
+          {
+            "text": "🤝 Partnerships",
+            "callback_data": "agent:partnerships:active"
+          }
+        ],
+        [
+          {
             "text": "📊 Campaign Stats",
             "callback_data": "agent:marketing-analyst:campaign_report"
           },
           {
-            "text": "🤝 Proposals",
-            "callback_data": "agent:sales:active_proposals"
+            "text": "💬 Support Insights",
+            "callback_data": "agent:customer-support:insights"
           }
         ],
         [
@@ -287,7 +297,7 @@
       ]
     },
     "team_menu": {
-      "text": "👥 **Agent Team Overview**\n44 agents across 8 teams:",
+      "text": "👥 **Agent Team Overview**\n47 agents across 8 teams:",
       "buttons": [
         [
           {
@@ -311,7 +321,7 @@
         ],
         [
           {
-            "text": "🚀 Growth (4)",
+            "text": "🚀 Growth (7)",
             "callback_data": "menu:growth"
           },
           {

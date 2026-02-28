@@ -112,7 +112,10 @@
       "members": [
         "sales-agent",
         "content-marketing-agent",
-        "marketing-analyst-agent"
+        "marketing-analyst-agent",
+        "customer-success-agent",
+        "partnerships-agent",
+        "customer-support-agent"
       ],
       "spawn_config": {
         "max_depth": 2,
