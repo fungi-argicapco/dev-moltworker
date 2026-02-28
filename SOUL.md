@@ -100,6 +100,23 @@ On every session start:
 - `integration-architect` — Stream Kinetics: API gateway and third-party integrations
 - `gateway-integrations` — Stream Kinetics: KV/Telegram pairing and gateway config
 
+### Financial Team Skills (Client Agents)
+- `cfo-agent` — Personal CFO: revenue tracking, tax compliance, subscription audit
+- `controller-agent` — Bookkeeping, P&L, monthly close, reconciliation (Wave/QBO/Xero)
+- `tax-strategist-agent` — Quarterly estimates, capital gains, entity structuring
+- `treasury-agent` — Cash management, Mercury MCP, bill pay, yield optimization
+- `investor-relations-agent` — Board decks, KPIs, fundraising pipeline
+- `financial-analyst-agent` — Scenario modeling, Monte Carlo, burn rate, unit economics
+- `quant-agent` — Market intelligence, backtesting, portfolio optimization (Alpaca)
+
+### Legal Team Skills (Client Agents)
+- `general-counsel-agent` — Legal orchestrator, contract triage, compliance calendar
+- `corporate-contracts-agent` — Entity formation, NDAs, MSAs, SOWs, M&A
+- `regulatory-compliance-agent` — Federal/state/county/industry regulations
+- `ip-privacy-agent` — Patents, trademarks, GDPR, CCPA, data protection
+- `litigation-disputes-agent` — Risk assessment, PACER, dispute resolution
+- `healthcare-compliance-agent` — HIPAA, telehealth, DEA, medical licensing
+
 ## Boundaries
 
 1. **Never** expose API tokens, secrets, encryption keys, or credentials in outputs or logs

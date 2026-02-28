@@ -1,4 +1,4 @@
-# TOOLS.md — Aria (CFO Agent)
+# TOOLS.md — Aria (CFO + Team Orchestrator)
 
 ## Runtime
 
@@ -11,18 +11,45 @@
 
 > Note: Integrations are being set up. This file will be updated as each is activated.
 
-### Wave (waveapps.com) — STATUS: PENDING
+### Financial Integrations
+
+#### Wave (waveapps.com) — STATUS: PENDING
 - Purpose: Accounting, invoicing, expense tracking
-- API: Wave REST API (verify current status post-H&R Block acquisition)
+- API: Wave REST API
 - Scope: Read/write transactions, invoices, expense categories
+- Used by: Controller Agent
 
-### Google Calendar — STATUS: PENDING
-- Purpose: Financial deadline reminders
-- Scope: Read/write calendar events for tax deadlines and renewals
+#### Mercury Bank — STATUS: PENDING
+- Purpose: Cash position, bill pay, treasury yield
+- MCP: Mercury MCP (13 tools, read-only)
+- Scope: Accounts, transactions, treasury, recipients
+- Used by: Treasury Agent
 
-### Gmail — STATUS: PENDING
+#### Google Calendar — STATUS: PENDING
+- Purpose: Financial + legal deadline reminders
+- Scope: Read/write calendar events for tax/compliance deadlines
+
+#### Gmail — STATUS: PENDING
 - Purpose: Receipt capture, CPA correspondence
 - Scope: Read-only recommended
+
+### Legal Integrations
+
+#### USPTO TSDR — STATUS: AVAILABLE
+- Purpose: Trademark clearance searches
+- API: USPTO REST API (free, public)
+- Used by: IP & Privacy Agent
+
+#### PACER — STATUS: PENDING
+- Purpose: Federal court record monitoring
+- API: PACER API ($0.10/page)
+- Used by: Litigation & Disputes Agent
+
+### Trading Integrations — STATUS: FUTURE (Phase 2+)
+
+#### Alpaca — NOT ACTIVE
+- Purpose: Equities, options trading (paper → live)
+- Will be activated when client is ready for investment tools
 
 ## Tax Jurisdictions
 
@@ -43,10 +70,37 @@
 ### King County
 - Annual requirements: TBD (confirm with Dr. Lowe)
 
+## Healthcare Compliance
+
 ### Professional Licenses
 - WA State Psychology Board license renewal
 - Continuing education requirements tracking
+- DEA registration (if applicable): TBD
+
+### HIPAA
+- Annual risk assessment: TBD
+- Workforce training: TBD
+- BAA inventory: TBD (list all vendors handling PHI)
+
+### Telehealth
+- Active states: Washington (primary)
+- Future expansion: TBD
 
 ## Skills Available
 
-- `cfo-agent` — Core financial management capabilities
+### Financial Team
+- `cfo-agent` — Core financial management (Aria's primary skill)
+- `controller-agent` — Bookkeeping, P&L, monthly close
+- `tax-strategist-agent` — Tax planning and compliance
+- `treasury-agent` — Cash management via Mercury
+- `investor-relations-agent` — Board decks, KPIs
+- `financial-analyst-agent` — Modeling and forecasting
+- `quant-agent` — Market intelligence (future)
+
+### Legal Team
+- `general-counsel-agent` — Legal orchestration
+- `corporate-contracts-agent` — Entity and contracts
+- `regulatory-compliance-agent` — Multi-jurisdiction compliance
+- `ip-privacy-agent` — IP and data privacy
+- `litigation-disputes-agent` — Risk and disputes
+- `healthcare-compliance-agent` — HIPAA and licensing
