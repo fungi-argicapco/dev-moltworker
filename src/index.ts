@@ -27,7 +27,7 @@ import type { AppEnv, MoltbotEnv } from './types';
 import { MOLTBOT_PORT } from './config';
 import { createAccessMiddleware } from './auth';
 import { ensureMoltbotGateway, findExistingMoltbotProcess } from './gateway';
-import { publicRoutes, api, adminUi, debug, cdp } from './routes';
+import { publicRoutes, api, adminUi, debug, cdp, telegram } from './routes';
 import { redactSensitiveParams } from './utils/logging';
 import loadingPageHtml from './assets/loading.html';
 import configErrorHtml from './assets/config-error.html';
@@ -151,6 +151,10 @@ app.route('/', publicRoutes);
 // Mount CDP routes (uses shared secret auth via query param, not CF Access)
 app.route('/cdp', cdp);
 
+// Mount Telegram webhook routes (unauthenticated — webhooks come from Telegram servers)
+// Must be before CF Access middleware. Validation is via bot token in URL.
+app.route('/api/telegram', telegram);
+
 // =============================================================================
 // PROTECTED ROUTES: Cloudflare Access authentication required
 // =============================================================================
@@ -161,6 +165,11 @@ app.use('*', async (c, next) => {
 
   // Skip validation for debug routes (they have their own enable check)
   if (url.pathname.startsWith('/debug')) {
+    return next();
+  }
+
+  // Skip validation for telegram webhook (only needs bot token, not full env)
+  if (url.pathname.startsWith('/api/telegram')) {
     return next();
   }
 
