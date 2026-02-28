@@ -10,8 +10,6 @@
 
 import { Hono } from 'hono';
 import type { AppEnv } from '../types';
-import { ensureMoltbotGateway } from '../gateway';
-import { MOLTBOT_PORT } from '../config';
 import {
   getMenuForCommand,
   getMenuForCallback,
@@ -182,55 +180,71 @@ async function sendTyping(token: string, chatId: number): Promise<void> {
 }
 
 // ============================================================================
-// Agent Invocation via OpenClaw Gateway
+// Agent Invocation via Cloudflare AI Gateway
 // ============================================================================
 
 /**
- * Invoke an agent by sending a prompt through the OpenClaw gateway's HTTP API.
+ * Invoke an agent by sending a prompt directly to the Cloudflare AI Gateway.
  *
- * OpenClaw exposes a simple chat endpoint on its HTTP port.
- * We send the agent prompt as a user message and collect the response.
+ * This bypasses the OpenClaw container entirely — faster response times,
+ * no cold start, no container dependency for Telegram commands.
  */
 async function invokeAgent(
-  sandbox: AppEnv['Variables']['sandbox'],
   env: AppEnv['Bindings'],
   prompt: string,
 ): Promise<string> {
   try {
-    // Ensure gateway is running
-    await ensureMoltbotGateway(sandbox, env);
+    const accountId = env.CF_AI_GATEWAY_ACCOUNT_ID;
+    const gatewayId = env.CF_AI_GATEWAY_GATEWAY_ID;
+    const apiKey = env.CLOUDFLARE_AI_GATEWAY_API_KEY;
+    const model = env.CF_AI_GATEWAY_MODEL || 'anthropic/claude-sonnet-4-6';
 
-    // Use the OpenClaw REST-style chat endpoint inside the container
-    // This communicates with the AI via the configured gateway
-    const token = env.MOLTBOT_GATEWAY_TOKEN || '';
-    const gatewayUrl = `http://localhost:${MOLTBOT_PORT}/api/v1/chat`;
+    if (!accountId || !gatewayId || !apiKey) {
+      console.error('[Telegram] AI Gateway not configured');
+      return '⚠️ AI Gateway is not configured. Set CF_AI_GATEWAY_* secrets.';
+    }
 
-    const request = new Request(gatewayUrl, {
+    // Extract the provider model name (e.g., "anthropic/claude-sonnet-4-6" → "claude-sonnet-4-6")
+    const modelName = model.includes('/') ? model.split('/').slice(1).join('/') : model;
+
+    const url = `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/anthropic/v1/messages`;
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        'cf-aig-authorization': `Bearer ${apiKey}`,
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        message: prompt,
+        model: modelName,
+        max_tokens: 2048,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
       }),
     });
-    const response = await sandbox.containerFetch(request, MOLTBOT_PORT);
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error('[Telegram] Gateway response error:', response.status, errText);
-      return `⚠️ Agent unavailable (gateway returned ${response.status}). Try again later.`;
+      console.error('[Telegram] AI Gateway error:', response.status, errText);
+      return `⚠️ Agent unavailable (AI Gateway returned ${response.status}). Try again later.`;
     }
 
-    const data = (await response.json()) as Record<string, unknown>;
-    // OpenClaw returns { response: "..." } or { message: "..." }
-    const agentResponse =
-      (data.response as string) || (data.message as string) || (data.text as string);
+    const data = (await response.json()) as {
+      content?: Array<{ type: string; text?: string }>;
+    };
+
+    // Anthropic Messages API returns { content: [{ type: "text", text: "..." }] }
+    const textBlocks = data.content?.filter((b) => b.type === 'text') || [];
+    const agentResponse = textBlocks.map((b) => b.text || '').join('\n');
 
     if (!agentResponse) {
-      console.error('[Telegram] No response field in gateway reply:', JSON.stringify(data));
-      return '⚠️ Agent returned an empty response. The gateway may still be initializing.';
+      console.error('[Telegram] Empty AI response:', JSON.stringify(data));
+      return '⚠️ Agent returned an empty response.';
     }
 
     return agentResponse;
@@ -378,8 +392,7 @@ telegram.post('/webhook', async (c) => {
 
       // Build the prompt and invoke
       const prompt = buildAgentPrompt(parsed.agentName, parsed.action);
-      const sandbox = c.get('sandbox');
-      const response = await invokeAgent(sandbox, c.env, prompt);
+      const response = await invokeAgent(c.env, prompt);
 
       // Send the agent's response
       const header = `🤖 *${parsed.agentName.replace(/-/g, ' ')}* → _${parsed.action.replace(/_/g, ' ')}_\n\n`;
