@@ -30,6 +30,7 @@ export interface MoltbotEnv {
   TELEGRAM_DM_POLICY?: string;
   TELEGRAM_DM_ALLOW_FROM?: string; // Comma-separated Telegram user IDs
   TELEGRAM_GROUP_POLICY?: string;
+  TELEGRAM_WEBHOOK_SECRET?: string; // Secret token for webhook validation (set via wrangler secret)
   DISCORD_BOT_TOKEN?: string;
   DISCORD_DM_POLICY?: string;
   SLACK_BOT_TOKEN?: string;

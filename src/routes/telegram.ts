@@ -22,6 +22,49 @@ import {
 } from './telegram-menus';
 
 // ============================================================================
+// Telegram IP Allowlist
+// ============================================================================
+
+/**
+ * Telegram's published webhook IP ranges (IPv4).
+ * Source: https://core.telegram.org/bots/webhooks#the-short-version
+ * Monitor @BotNews on Telegram for changes.
+ */
+const TELEGRAM_CIDRS = [
+  { network: 0x959A_A000, mask: 0xFFFF_F000 }, // 149.154.160.0/20
+  { network: 0x5B6C_0400, mask: 0xFFFF_FC00 }, // 91.108.4.0/22
+];
+
+/**
+ * Parse an IPv4 address string to a 32-bit integer.
+ */
+function ipToInt(ip: string): number | null {
+  const parts = ip.split('.');
+  if (parts.length !== 4) return null;
+  let result = 0;
+  for (const part of parts) {
+    const num = parseInt(part, 10);
+    if (isNaN(num) || num < 0 || num > 255) return null;
+    result = (result << 8) | num;
+  }
+  // Convert to unsigned 32-bit
+  return result >>> 0;
+}
+
+/**
+ * Check if an IP address falls within Telegram's published webhook CIDR ranges.
+ */
+function isFromTelegram(ip: string): boolean {
+  const ipInt = ipToInt(ip);
+  if (ipInt === null) {
+    // Not a valid IPv4 — reject
+    console.error(`[Telegram] Cannot parse IP: ${ip}`);
+    return false;
+  }
+  return TELEGRAM_CIDRS.some((cidr) => (ipInt & cidr.mask) === cidr.network);
+}
+
+// ============================================================================
 // Telegram API Helpers
 // ============================================================================
 
@@ -216,6 +259,24 @@ const telegram = new Hono<AppEnv>();
  *   - callback_query with agent:* → invoke agent and return response
  */
 telegram.post('/webhook', async (c) => {
+  // ── Layer 1: Validate source IP against Telegram's published ranges ──
+  const clientIp = c.req.header('CF-Connecting-IP') || c.req.header('X-Real-IP') || '';
+  if (!isFromTelegram(clientIp)) {
+    console.error(`[Telegram] Rejected webhook from non-Telegram IP: ${clientIp}`);
+    return c.json({ ok: false }, 403);
+  }
+
+  // ── Layer 2: Validate secret token ──
+  // (moved before JSON parsing to short-circuit unauthorized requests)
+  const webhookSecret = c.env.TELEGRAM_WEBHOOK_SECRET;
+  if (webhookSecret) {
+    const receivedToken = c.req.header('X-Telegram-Bot-Api-Secret-Token');
+    if (receivedToken !== webhookSecret) {
+      console.error('[Telegram] Invalid webhook secret token');
+      return c.json({ ok: false }, 403);
+    }
+  }
+
   const botToken = getBotToken(c.env);
   if (!botToken) {
     console.error('[Telegram] No bot token configured');
@@ -228,6 +289,7 @@ telegram.post('/webhook', async (c) => {
   } catch {
     return c.json({ ok: false, error: 'Invalid JSON' }, 400);
   }
+
 
   // ── Handle slash commands ────────────────────────────────────────────
   const message = update.message as Record<string, unknown> | undefined;
@@ -359,6 +421,9 @@ telegram.post('/set-webhook', async (c) => {
   const result = await callTelegramApi(botToken, 'setWebhook', {
     url: body.url,
     allowed_updates: ['message', 'callback_query'],
+    // Include secret_token if configured — Telegram will send it as
+    // X-Telegram-Bot-Api-Secret-Token header with every webhook request
+    ...(c.env.TELEGRAM_WEBHOOK_SECRET ? { secret_token: c.env.TELEGRAM_WEBHOOK_SECRET } : {}),
   });
 
   return c.json(result);
