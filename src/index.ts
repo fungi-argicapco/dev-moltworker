@@ -206,6 +206,12 @@ app.use('*', async (c, next) => {
 
 // Middleware: Cloudflare Access authentication for protected routes
 app.use('*', async (c, next) => {
+  // Skip CF Access for Telegram webhook (comes from Telegram servers, not browsers)
+  const url = new URL(c.req.url);
+  if (url.pathname.startsWith('/api/telegram')) {
+    return next();
+  }
+
   // Determine response type based on Accept header
   const acceptsHtml = c.req.header('Accept')?.includes('text/html');
   const middleware = createAccessMiddleware({
