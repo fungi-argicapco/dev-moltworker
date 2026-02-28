@@ -61,6 +61,9 @@
     "coo-agent": "mid",
     "sre-agent": "light",
     "devops-agent": "free",
+    "people-ops-agent": "free",
+    "learning-development-agent": "free",
+    "culture-engagement-agent": "free",
     "infrastructure-agent": "light",
     "runbook-agent": "free",
     "growth-strategist-agent": "mid",
@@ -73,6 +76,8 @@
     "cpo-agent": "mid",
     "ux-researcher-agent": "light",
     "product-manager-agent": "light",
+    "qa-agent": "free",
+    "data-analyst-agent": "light",
     "chair-agent": "mid",
     "training-agent": "free"
   },

@@ -131,7 +131,9 @@
       "orchestrator_persona": null,
       "members": [
         "ux-researcher-agent",
-        "product-manager-agent"
+        "product-manager-agent",
+        "qa-agent",
+        "data-analyst-agent"
       ],
       "spawn_config": {
         "max_depth": 2,
@@ -141,16 +143,19 @@
       }
     },
     "talent": {
-      "name": "Human-AI Relations Team",
-      "emoji": "🤖",
-      "orchestrator": "chair-agent",
+      "name": "Talent & People Team",
+      "emoji": "�‍💼",
+      "orchestrator": "chro-agent",
       "orchestrator_persona": null,
       "members": [
-        "training-agent"
+        "recruiter-agent",
+        "people-ops-agent",
+        "learning-development-agent",
+        "culture-engagement-agent"
       ],
       "spawn_config": {
-        "max_depth": 1,
-        "max_concurrent": 2,
+        "max_depth": 2,
+        "max_concurrent": 3,
         "timeout_seconds": 600,
         "model_escalation": false
       }

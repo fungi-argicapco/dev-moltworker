@@ -284,8 +284,18 @@
             "callback_data": "agent:ux-researcher:findings"
           },
           {
-            "text": "📊 Product Metrics",
-            "callback_data": "agent:cpo:metrics"
+            "text": "📊 Product Analytics",
+            "callback_data": "agent:data-analyst:dashboard"
+          }
+        ],
+        [
+          {
+            "text": "✅ Quality Gate",
+            "callback_data": "agent:qa:release_readiness"
+          },
+          {
+            "text": "🐛 Bug Triage",
+            "callback_data": "agent:qa:bug_triage"
           }
         ],
         [
@@ -297,7 +307,7 @@
       ]
     },
     "team_menu": {
-      "text": "👥 **Agent Team Overview**\n47 agents across 8 teams:",
+      "text": "👥 **Agent Team Overview**\n51 agents across 8 teams:",
       "buttons": [
         [
           {
@@ -325,13 +335,13 @@
             "callback_data": "menu:growth"
           },
           {
-            "text": "📦 Product (3)",
+            "text": "📦 Product (5)",
             "callback_data": "menu:product"
           }
         ],
         [
           {
-            "text": "🤖 Talent (2)",
+            "text": "🧑‍💼 Talent (5)",
             "callback_data": "agent:chair:team_audit"
           },
           {
