@@ -34,22 +34,23 @@ interface InlineKeyboardMarkup {
 // Menu Lookups
 // ============================================================================
 
-const menus = (menuConfig as Record<string, unknown>).menus as Record<string, MenuEntry>;
+const menus = (menuConfig as Record<string, unknown>).inline_keyboards as Record<string, MenuEntry>;
 
 /**
  * Map slash commands to menu keys.
  * /finance → finance_menu, /product → product_menu, etc.
  */
 const COMMAND_TO_MENU: Record<string, string> = {
-  '/start': 'welcome',
-  '/help': 'welcome',
+  '/start': 'help_menu',
+  '/help': 'help_menu',
   '/finance': 'finance_menu',
   '/legal': 'legal_menu',
   '/security': 'security_menu',
-  '/ops': 'operations_menu',
+  '/ops': 'ops_menu',
   '/growth': 'growth_menu',
   '/product': 'product_menu',
   '/teams': 'team_menu',
+  '/team': 'team_menu',
   '/talent': 'team_menu', // talent shows via team overview for now
   '/platform': 'team_menu', // platform shows via team overview for now
 };
@@ -62,7 +63,7 @@ const CALLBACK_TO_MENU: Record<string, string> = {
   'menu:finance': 'finance_menu',
   'menu:legal': 'legal_menu',
   'menu:security': 'security_menu',
-  'menu:ops': 'operations_menu',
+  'menu:ops': 'ops_menu',
   'menu:growth': 'growth_menu',
   'menu:product': 'product_menu',
   'menu:teams': 'team_menu',
@@ -154,6 +155,6 @@ export function buildAgentPrompt(agentName: string, action: string): string {
  * Get welcome text from config
  */
 export function getWelcomeText(): string {
-  const welcome = menus['welcome'];
+  const welcome = menus['help_menu'];
   return welcome?.text || '👋 Welcome! Use the menu commands to interact with agent teams.';
 }
