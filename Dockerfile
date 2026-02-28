@@ -31,20 +31,36 @@ RUN mkdir -p /root/.openclaw \
     && mkdir -p /root/clawd \
     && mkdir -p /root/clawd/skills
 
+# ============================================================
+# MULTI-TENANT SUPPORT
+# All client workspaces are baked into the image.
+# At runtime, AGENT_MODE + CLIENT_NAME env vars (set via wrangler
+# secrets) determine which workspace files start-openclaw.sh loads.
+#   AGENT_MODE=omega (default)  → Omega orchestrator
+#   AGENT_MODE=client           → Client agent (requires CLIENT_NAME)
+# ============================================================
+
 # Copy startup script
-# Build cache bust: 2026-02-27-v41-multi-agent-omega
+# Build cache bust: 2026-02-27-v42-multi-tenant-platforms
 COPY start-openclaw.sh /usr/local/bin/start-openclaw.sh
 RUN chmod +x /usr/local/bin/start-openclaw.sh
 
 # Copy custom skills (ClawHub and legacy)
 COPY skills/ /root/clawd/skills/
 
-# Copy Omega persona and workspace files (multi-agent ready)
-# workspace/ contains: AGENTS.md, IDENTITY.md, SOUL.md, TOOLS.md, USER.md,
-#                       HEARTBEAT.md, BOOTSTRAP.md, MEMORY.md
+# Copy agents (skills library — available to all containers)
+COPY agents/ /root/clawd/agents/
+
+# Copy Omega workspace (default)
 COPY SOUL.md /root/clawd/SOUL.md
 COPY workspace/ /root/clawd/
-COPY agents/ /root/clawd/agents/
+
+# Copy all client workspaces (selected at runtime via CLIENT_NAME)
+COPY clients/ /root/clawd/clients/
+
+# Default agent mode: omega (override at deploy time for clients)
+ENV AGENT_MODE=omega
+ENV CLIENT_NAME=""
 
 # Set working directory
 WORKDIR /root/clawd

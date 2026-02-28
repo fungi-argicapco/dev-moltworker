@@ -18,6 +18,7 @@ fi
 CONFIG_DIR="/root/.openclaw"
 CONFIG_FILE="$CONFIG_DIR/openclaw.json"
 WORKSPACE_DIR="/root/clawd"
+CLIENTS_DIR="/root/clawd/clients"
 SKILLS_DIR="/root/clawd/skills"
 LAST_SYNC_FILE="/tmp/.last-sync"
 
@@ -356,10 +357,9 @@ EOFPATCH
 # WORKSPACE: Copy baked-in files to OpenClaw's default workspace
 # OpenClaw reads from ~/.openclaw/workspace/ by default.
 # Our files are baked into /root/clawd/ via Dockerfile.
-# Strategy: Copy ALL .md files from baked workspace to default
-# workspace so the agent finds them automatically on session start.
-# For multi-tenant: each client gets their own workspace dir with
-# their own set of these files (IDENTITY.md, SOUL.md, USER.md, etc.)
+#
+# MULTI-TENANT: When AGENT_MODE=client and CLIENT_NAME is set,
+# overlay client workspace files on top of defaults.
 # ============================================================
 OC_WORKSPACE="/root/.openclaw/workspace"
 mkdir -p "$OC_WORKSPACE"
@@ -377,8 +377,34 @@ for md_file in "$WORKSPACE_DIR"/*.md; do
 done
 echo "Workspace: copied $WORKSPACE_FILES_COPIED files to $OC_WORKSPACE"
 
+# CLIENT MODE: Overlay client workspace files on top of defaults
+# This overwrites SOUL.md, IDENTITY.md, USER.md, etc. with client versions
+if [ "$AGENT_MODE" = "client" ] && [ -n "$CLIENT_NAME" ]; then
+    CLIENT_WORKSPACE="$CLIENTS_DIR/$CLIENT_NAME"
+    if [ -d "$CLIENT_WORKSPACE" ]; then
+        CLIENT_FILES_COPIED=0
+        for md_file in "$CLIENT_WORKSPACE"/*.md; do
+            if [ -f "$md_file" ]; then
+                fname=$(basename "$md_file")
+                cp "$md_file" "$OC_WORKSPACE/$fname"
+                CLIENT_FILES_COPIED=$((CLIENT_FILES_COPIED + 1))
+            fi
+        done
+        echo "Client workspace: overlaid $CLIENT_FILES_COPIED files from $CLIENT_WORKSPACE"
+        # Also copy SOUL.md to the root workspace dir for OpenClaw
+        if [ -f "$CLIENT_WORKSPACE/SOUL.md" ]; then
+            cp "$CLIENT_WORKSPACE/SOUL.md" "$WORKSPACE_DIR/SOUL.md"
+        fi
+    else
+        echo "ERROR: Client workspace not found at $CLIENT_WORKSPACE"
+        echo "  Available clients: $(ls -1 $CLIENTS_DIR 2>/dev/null || echo 'none')"
+        exit 1
+    fi
+fi
+
 # Also ensure SOUL.md is in the workspace (may be at root level, not in workspace/)
 if [ -f "$WORKSPACE_DIR/SOUL.md" ]; then
+    cp "$WORKSPACE_DIR/SOUL.md" "$OC_WORKSPACE/SOUL.md"
     echo "  SOUL.md: $(wc -l < $OC_WORKSPACE/SOUL.md) lines"
 elif [ -f "/root/clawd/SOUL.md" ] && [ ! -f "$OC_WORKSPACE/SOUL.md" ]; then
     cp "/root/clawd/SOUL.md" "$OC_WORKSPACE/SOUL.md"
@@ -429,51 +455,79 @@ fi
 
 
 # ============================================================
-# MULTI-AGENT: Create Omega as a named agent
-# openclaw agents add <id> creates a named agent with its own
-# workspace. We point omega's workspace to /root/clawd/ which
-# has all our baked-in files (SOUL.md, IDENTITY.md, etc.)
-# For multi-tenant: each client gets their own
-#   openclaw agents add <client-name> --workspace /root/<client>/
+# AGENT SETUP: Create named agent based on AGENT_MODE
+#   AGENT_MODE=omega (default) → Create Omega orchestrator
+#   AGENT_MODE=client          → Create client-specific agent
 # ============================================================
-echo "Setting up Omega agent..."
+if [ "$AGENT_MODE" = "client" ] && [ -n "$CLIENT_NAME" ]; then
+    # CLIENT MODE: Create agent with client name
+    AGENT_ID="client-$CLIENT_NAME"
+    echo "Setting up client agent: $AGENT_ID"
+    echo "" | openclaw agents add "$AGENT_ID" 2>&1 || true
 
-# Create omega agent (non-interactive — pipe Enter to accept default workspace)
-echo "" | openclaw agents add omega 2>&1 || true
-
-# The agent workspace could be at either location depending on OpenClaw version
-OMEGA_AGENT_DIR="$HOME/.openclaw/workspace-omega"
-if [ ! -d "$OMEGA_AGENT_DIR" ]; then
-    OMEGA_AGENT_DIR="$HOME/.openclaw/agents/omega"
-fi
-if [ -d "$OMEGA_AGENT_DIR" ]; then
-    # Copy our workspace files into the omega agent's workspace
-    for md_file in "$WORKSPACE_DIR"/*.md; do
-        if [ -f "$md_file" ]; then
-            cp "$md_file" "$OMEGA_AGENT_DIR/$(basename "$md_file")"
-        fi
-    done
-    # Also copy SOUL.md from root if it exists
-    if [ -f "/root/clawd/SOUL.md" ]; then
-        cp "/root/clawd/SOUL.md" "$OMEGA_AGENT_DIR/SOUL.md"
+    # Find agent workspace (location varies by OpenClaw version)
+    AGENT_DIR="$HOME/.openclaw/workspace-$AGENT_ID"
+    if [ ! -d "$AGENT_DIR" ]; then
+        AGENT_DIR="$HOME/.openclaw/agents/$AGENT_ID"
     fi
-    echo "Omega agent: workspace populated ($(ls -1 $OMEGA_AGENT_DIR/*.md 2>/dev/null | wc -l) files)"
-
-    # Link skills into omega's workspace
-    mkdir -p "$OMEGA_AGENT_DIR/skills"
-    if [ -d "$WORKSPACE_DIR/agents" ]; then
-        for agent_dir in "$WORKSPACE_DIR"/agents/*/; do
-            skill_name=$(basename "$agent_dir")
-            if [ -f "$agent_dir/SKILL.md" ] && [ ! -e "$OMEGA_AGENT_DIR/skills/$skill_name" ]; then
-                ln -s "$agent_dir" "$OMEGA_AGENT_DIR/skills/$skill_name"
+    if [ -d "$AGENT_DIR" ]; then
+        # Copy client workspace files into agent workspace
+        CLIENT_WORKSPACE="$CLIENTS_DIR/$CLIENT_NAME"
+        for md_file in "$CLIENT_WORKSPACE"/*.md; do
+            if [ -f "$md_file" ]; then
+                cp "$md_file" "$AGENT_DIR/$(basename "$md_file")"
             fi
         done
-        echo "Omega agent: $(ls -1 $OMEGA_AGENT_DIR/skills/ 2>/dev/null | wc -l) skills linked"
+        echo "Client agent: workspace populated ($(ls -1 $AGENT_DIR/*.md 2>/dev/null | wc -l) files)"
+
+        # Link only client-relevant skills (CFO agent + any client-specific)
+        mkdir -p "$AGENT_DIR/skills"
+        if [ -d "$WORKSPACE_DIR/agents/cfo-agent" ]; then
+            if [ ! -e "$AGENT_DIR/skills/cfo-agent" ]; then
+                ln -s "$WORKSPACE_DIR/agents/cfo-agent" "$AGENT_DIR/skills/cfo-agent"
+                echo "Skill linked: cfo-agent"
+            fi
+        fi
+        mkdir -p "$AGENT_DIR/memory"
+        echo "Client agent: ready (skills: $(ls -1 $AGENT_DIR/skills/ 2>/dev/null | wc -l))"
+    else
+        echo "Client agent: WARNING — agent dir not found at $AGENT_DIR"
     fi
-    mkdir -p "$OMEGA_AGENT_DIR/memory"
 else
-    echo "Omega agent: WARNING — agent dir not found at $OMEGA_AGENT_DIR"
-    echo "  The 'openclaw agents add omega' command may not have created it."
+    # OMEGA MODE: Original behavior
+    echo "Setting up Omega agent..."
+    echo "" | openclaw agents add omega 2>&1 || true
+
+    OMEGA_AGENT_DIR="$HOME/.openclaw/workspace-omega"
+    if [ ! -d "$OMEGA_AGENT_DIR" ]; then
+        OMEGA_AGENT_DIR="$HOME/.openclaw/agents/omega"
+    fi
+    if [ -d "$OMEGA_AGENT_DIR" ]; then
+        for md_file in "$WORKSPACE_DIR"/*.md; do
+            if [ -f "$md_file" ]; then
+                cp "$md_file" "$OMEGA_AGENT_DIR/$(basename "$md_file")"
+            fi
+        done
+        if [ -f "/root/clawd/SOUL.md" ]; then
+            cp "/root/clawd/SOUL.md" "$OMEGA_AGENT_DIR/SOUL.md"
+        fi
+        echo "Omega agent: workspace populated ($(ls -1 $OMEGA_AGENT_DIR/*.md 2>/dev/null | wc -l) files)"
+
+        mkdir -p "$OMEGA_AGENT_DIR/skills"
+        if [ -d "$WORKSPACE_DIR/agents" ]; then
+            for agent_dir in "$WORKSPACE_DIR"/agents/*/; do
+                skill_name=$(basename "$agent_dir")
+                if [ -f "$agent_dir/SKILL.md" ] && [ ! -e "$OMEGA_AGENT_DIR/skills/$skill_name" ]; then
+                    ln -s "$agent_dir" "$OMEGA_AGENT_DIR/skills/$skill_name"
+                fi
+            done
+            echo "Omega agent: $(ls -1 $OMEGA_AGENT_DIR/skills/ 2>/dev/null | wc -l) skills linked"
+        fi
+        mkdir -p "$OMEGA_AGENT_DIR/memory"
+    else
+        echo "Omega agent: WARNING — agent dir not found at $OMEGA_AGENT_DIR"
+        echo "  The 'openclaw agents add omega' command may not have created it."
+    fi
 fi
 
 # ============================================================
