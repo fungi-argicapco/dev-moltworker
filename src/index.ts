@@ -132,8 +132,14 @@ app.use('*', async (c, next) => {
   await next();
 });
 
-// Middleware: Initialize sandbox for all requests
+// Middleware: Initialize sandbox for all requests (except Telegram webhooks)
 app.use('*', async (c, next) => {
+  const url = new URL(c.req.url);
+  // Telegram webhooks don't need the sandbox/container — skip to avoid
+  // Durable Object init failures blocking the webhook handler
+  if (url.pathname.startsWith('/api/telegram')) {
+    return next();
+  }
   const options = buildSandboxOptions(c.env);
   const sandbox = getSandbox(c.env.Sandbox, 'moltbot', options);
   c.set('sandbox', sandbox);
