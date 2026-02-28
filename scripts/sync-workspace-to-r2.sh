@@ -43,6 +43,7 @@ for md_file in "$CLIENT_DIR"/*.md; do
         bunx wrangler r2 object put "$BUCKET_NAME/workspace/$fname" \
             --file="$md_file" \
             --content-type="text/markdown" \
+            --remote \
             2>&1 | grep -v "^$" || true
         FILES_SYNCED=$((FILES_SYNCED + 1))
     fi
