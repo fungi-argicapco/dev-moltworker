@@ -43,6 +43,9 @@ export interface MoltbotEnv {
   WORKER_URL?: string; // Public URL of the worker (for CDP endpoint)
   // Linear API
   LINEAR_API_KEY?: string; // Linear API key for issue management skill
+  // Multi-tenant client configuration
+  AGENT_MODE?: string; // 'omega' (default) or 'client'
+  CLIENT_NAME?: string; // Client slug (e.g., 'lowe-neuropsych') — required when AGENT_MODE='client'
 }
 
 /**

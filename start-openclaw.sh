@@ -18,7 +18,6 @@ fi
 CONFIG_DIR="/root/.openclaw"
 CONFIG_FILE="$CONFIG_DIR/openclaw.json"
 WORKSPACE_DIR="/root/clawd"
-CLIENTS_DIR="/root/clawd/clients"
 SKILLS_DIR="/root/clawd/skills"
 LAST_SYNC_FILE="/tmp/.last-sync"
 
@@ -377,30 +376,9 @@ for md_file in "$WORKSPACE_DIR"/*.md; do
 done
 echo "Workspace: copied $WORKSPACE_FILES_COPIED files to $OC_WORKSPACE"
 
-# CLIENT MODE: Overlay client workspace files on top of defaults
-# This overwrites SOUL.md, IDENTITY.md, USER.md, etc. with client versions
-if [ "$AGENT_MODE" = "client" ] && [ -n "$CLIENT_NAME" ]; then
-    CLIENT_WORKSPACE="$CLIENTS_DIR/$CLIENT_NAME"
-    if [ -d "$CLIENT_WORKSPACE" ]; then
-        CLIENT_FILES_COPIED=0
-        for md_file in "$CLIENT_WORKSPACE"/*.md; do
-            if [ -f "$md_file" ]; then
-                fname=$(basename "$md_file")
-                cp "$md_file" "$OC_WORKSPACE/$fname"
-                CLIENT_FILES_COPIED=$((CLIENT_FILES_COPIED + 1))
-            fi
-        done
-        echo "Client workspace: overlaid $CLIENT_FILES_COPIED files from $CLIENT_WORKSPACE"
-        # Also copy SOUL.md to the root workspace dir for OpenClaw
-        if [ -f "$CLIENT_WORKSPACE/SOUL.md" ]; then
-            cp "$CLIENT_WORKSPACE/SOUL.md" "$WORKSPACE_DIR/SOUL.md"
-        fi
-    else
-        echo "ERROR: Client workspace not found at $CLIENT_WORKSPACE"
-        echo "  Available clients: $(ls -1 $CLIENTS_DIR 2>/dev/null || echo 'none')"
-        exit 1
-    fi
-fi
+# CLIENT MODE: Workspace files are already in /root/clawd/ — loaded from R2
+# by the Worker (loadClientWorkspace in process.ts) before this script runs.
+# No local overlay needed; the R2 files overwrite baked-in defaults.
 
 # Also ensure SOUL.md is in the workspace (may be at root level, not in workspace/)
 if [ -f "$WORKSPACE_DIR/SOUL.md" ]; then
@@ -471,9 +449,8 @@ if [ "$AGENT_MODE" = "client" ] && [ -n "$CLIENT_NAME" ]; then
         AGENT_DIR="$HOME/.openclaw/agents/$AGENT_ID"
     fi
     if [ -d "$AGENT_DIR" ]; then
-        # Copy client workspace files into agent workspace
-        CLIENT_WORKSPACE="$CLIENTS_DIR/$CLIENT_NAME"
-        for md_file in "$CLIENT_WORKSPACE"/*.md; do
+        # Copy workspace files (already loaded from R2 into /root/clawd/) into agent workspace
+        for md_file in "$WORKSPACE_DIR"/*.md; do
             if [ -f "$md_file" ]; then
                 cp "$md_file" "$AGENT_DIR/$(basename "$md_file")"
             fi

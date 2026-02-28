@@ -2,7 +2,7 @@ import type { Sandbox, Process } from '@cloudflare/sandbox';
 import type { MoltbotEnv } from '../types';
 import { MOLTBOT_PORT, STARTUP_TIMEOUT_MS } from '../config';
 import { buildEnvVars } from './env';
-import { restoreFromR2 } from './sync';
+import { restoreFromR2, loadClientWorkspace } from './sync';
 
 /**
  * Find an existing OpenClaw gateway process
@@ -58,6 +58,16 @@ export async function ensureMoltbotGateway(sandbox: Sandbox, env: MoltbotEnv): P
   // No S3 credentials needed — uses the MOLTBOT_BUCKET R2 binding directly.
   const restoreResult = await restoreFromR2(sandbox, env.MOLTBOT_BUCKET);
   console.log('[Gateway] R2 restore:', restoreResult.details || restoreResult.error || 'done');
+
+  // In client mode, load workspace files from the client's R2 bucket
+  // This overwrites baked-in defaults with client-specific files (SOUL.md, USER.md, etc.)
+  if (env.AGENT_MODE === 'client' && env.CLIENT_NAME) {
+    const clientResult = await loadClientWorkspace(sandbox, env.MOLTBOT_BUCKET, env.CLIENT_NAME);
+    console.log('[Gateway] Client workspace:', clientResult.details || clientResult.error || 'done');
+    if (!clientResult.success) {
+      console.error('[Gateway] WARNING: Client workspace load failed, agent may use default persona');
+    }
+  }
 
   // Check if gateway is already running or starting
   const existingProcess = await findExistingMoltbotProcess(sandbox);

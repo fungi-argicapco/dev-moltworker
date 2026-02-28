@@ -51,12 +51,16 @@ COPY skills/ /root/clawd/skills/
 # Copy agents (skills library — available to all containers)
 COPY agents/ /root/clawd/agents/
 
-# Copy Omega workspace (default)
+# Copy Omega workspace (default — client workspaces loaded from R2 at runtime)
 COPY SOUL.md /root/clawd/SOUL.md
 COPY workspace/ /root/clawd/
 
-# Copy all client workspaces (selected at runtime via CLIENT_NAME)
-COPY clients/ /root/clawd/clients/
+# Client workspaces are NOT baked into the image.
+# In client mode, loadClientWorkspace() reads workspace files from the
+# client's R2 bucket at boot time. This ensures:
+#   - Zero cross-client file leakage (no other client's files on disk)
+#   - Config changes don't require image rebuilds
+#   - Image stays lean regardless of client count
 
 # Default agent mode: omega (override at deploy time for clients)
 ENV AGENT_MODE=omega

@@ -54,5 +54,9 @@ export function buildEnvVars(env: MoltbotEnv): Record<string, string> {
   if (env.WORKER_URL) envVars.WORKER_URL = env.WORKER_URL;
   if (env.LINEAR_API_KEY) envVars.LINEAR_API_KEY = env.LINEAR_API_KEY;
 
+  // Multi-tenant client configuration
+  if (env.AGENT_MODE) envVars.AGENT_MODE = env.AGENT_MODE;
+  if (env.CLIENT_NAME) envVars.CLIENT_NAME = env.CLIENT_NAME;
+
   return envVars;
 }

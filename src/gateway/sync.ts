@@ -254,3 +254,90 @@ export async function restoreFromR2(sandbox: Sandbox, bucket: R2Bucket): Promise
     details: restoredAny ? 'Restored from R2 backup' : 'No backups found, starting fresh',
   };
 }
+
+/**
+ * Load client workspace files from R2 into the container.
+ *
+ * Client workspace .md files are stored in R2 under the `workspace/` prefix:
+ *   workspace/SOUL.md
+ *   workspace/USER.md
+ *   workspace/IDENTITY.md
+ *   ... etc.
+ *
+ * This function reads each file and writes it into the container's workspace
+ * directory, overwriting any defaults from the baked-in image.
+ *
+ * Git repo (clients/lowe-neuropsych/) is the source of truth.
+ * CI/CD syncs workspace files from git → R2 on deploy.
+ */
+export async function loadClientWorkspace(
+  sandbox: Sandbox,
+  bucket: R2Bucket,
+  clientName: string,
+): Promise<SyncResult> {
+  const WORKSPACE_PREFIX = 'workspace/';
+  const CONTAINER_WORKSPACE = '/root/clawd';
+
+  console.log(`[CLIENT] Loading workspace for client: ${clientName}`);
+
+  // List all objects under workspace/ prefix
+  const listing = await bucket.list({ prefix: WORKSPACE_PREFIX });
+
+  if (!listing.objects || listing.objects.length === 0) {
+    return {
+      success: false,
+      error: `No workspace files found in R2 for client ${clientName}`,
+      details: `Looked for objects under prefix "${WORKSPACE_PREFIX}" in client bucket`,
+    };
+  }
+
+  let filesLoaded = 0;
+  const fileNames: string[] = [];
+
+  for (const obj of listing.objects) {
+    // Extract filename from R2 key (e.g., "workspace/SOUL.md" → "SOUL.md")
+    const filename = obj.key.replace(WORKSPACE_PREFIX, '');
+    if (!filename || filename.includes('/')) {
+      // Skip subdirectories or empty keys
+      continue;
+    }
+
+    const fileObj = await bucket.get(obj.key);
+    if (!fileObj) {
+      console.warn(`[CLIENT] Failed to read ${obj.key} from R2`);
+      continue;
+    }
+
+    const content = await fileObj.text();
+
+    // Write file into container workspace using sandbox.exec
+    // Escape content for shell (base64 encode for binary safety)
+    const b64Content = btoa(unescape(encodeURIComponent(content)));
+    const targetPath = `${CONTAINER_WORKSPACE}/${filename}`;
+
+    const writeResult = await sandbox.exec(
+      `echo '${b64Content}' | base64 -d > '${targetPath}'`,
+    );
+
+    if (writeResult.success) {
+      filesLoaded++;
+      fileNames.push(filename);
+    } else {
+      console.warn(`[CLIENT] Failed to write ${targetPath}:`, writeResult.stderr);
+    }
+  }
+
+  if (filesLoaded === 0) {
+    return {
+      success: false,
+      error: `No workspace files could be loaded for client ${clientName}`,
+    };
+  }
+
+  console.log(`[CLIENT] Loaded ${filesLoaded} workspace files: ${fileNames.join(', ')}`);
+
+  return {
+    success: true,
+    details: `Loaded ${filesLoaded} workspace files from R2: ${fileNames.join(', ')}`,
+  };
+}
