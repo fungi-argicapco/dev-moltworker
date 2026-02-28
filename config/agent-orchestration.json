@@ -93,7 +93,9 @@
       "orchestrator_persona": null,
       "members": [
         "sre-agent",
-        "devops-agent"
+        "devops-agent",
+        "infrastructure-agent",
+        "runbook-agent"
       ],
       "spawn_config": {
         "max_depth": 2,

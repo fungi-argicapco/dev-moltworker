@@ -61,6 +61,8 @@
     "coo-agent": "mid",
     "sre-agent": "light",
     "devops-agent": "free",
+    "infrastructure-agent": "light",
+    "runbook-agent": "free",
     "growth-strategist-agent": "mid",
     "sales-agent": "light",
     "content-marketing-agent": "light",

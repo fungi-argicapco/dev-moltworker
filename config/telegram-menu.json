@@ -198,6 +198,16 @@
         ],
         [
           {
+            "text": "🏗️ Resource Inventory",
+            "callback_data": "agent:infrastructure:inventory"
+          },
+          {
+            "text": "📋 Runbooks",
+            "callback_data": "agent:runbook:list"
+          }
+        ],
+        [
+          {
             "text": "📈 SLO Dashboard",
             "callback_data": "agent:sre:slo_dashboard"
           },
@@ -277,7 +287,7 @@
       ]
     },
     "team_menu": {
-      "text": "👥 **Agent Team Overview**\n42 agents across 8 teams:",
+      "text": "👥 **Agent Team Overview**\n44 agents across 8 teams:",
       "buttons": [
         [
           {
@@ -295,7 +305,7 @@
             "callback_data": "menu:security"
           },
           {
-            "text": "🔧 Operations (3)",
+            "text": "🔧 Operations (5)",
             "callback_data": "menu:ops"
           }
         ],
