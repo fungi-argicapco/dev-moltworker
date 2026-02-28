@@ -5,7 +5,10 @@
  * Handles:
  *   1. Slash commands (/finance, /product, etc.) → render inline keyboards
  *   2. Callback queries with "menu:*" → navigate between team sub-menus
- *   3. Callback queries with "agent:*" → invoke agent via OpenClaw gateway
+ *   3. Callback queries with "agent:*" → invoke agent via AI Gateway (Unified Billing)
+ *      Routes by model tier from config/model-routing.json:
+ *        - free/light → Workers AI models via workers-ai/ gateway path
+ *        - mid/premium → Anthropic via anthropic/v1/messages gateway path
  */
 
 import { Hono } from 'hono';
@@ -180,74 +183,149 @@ async function sendTyping(token: string, chatId: number): Promise<void> {
 }
 
 // ============================================================================
-// Agent Invocation via Cloudflare AI Gateway
+// Agent Invocation via Cloudflare AI Gateway (Unified Billing)
 // ============================================================================
 
+import modelRoutingConfig from '../../config/model-routing.json';
+
+type ModelTier = 'free' | 'light' | 'mid' | 'premium';
+
+interface TierConfig {
+  model: string;
+  description: string;
+  cost_per_1m_tokens: number;
+}
+
+const tiers = modelRoutingConfig.tiers as Record<ModelTier, TierConfig>;
+const agentTiers = modelRoutingConfig.agent_tiers as Record<string, ModelTier>;
+
 /**
- * Invoke an agent by sending a prompt directly to the Cloudflare AI Gateway.
+ * Resolve the model tier for an agent name.
+ * Falls back to "free" if the agent isn't in the config.
+ */
+function resolveModelForAgent(agentName: string): { model: string; tier: ModelTier } {
+  const tier = agentTiers[`${agentName}-agent`] || agentTiers[agentName] || 'free';
+  const config = tiers[tier] || tiers['free'];
+  return { model: config.model, tier };
+}
+
+/**
+ * Invoke an agent by sending a prompt via Cloudflare AI Gateway.
  *
- * This bypasses the OpenClaw container entirely — faster response times,
- * no cold start, no container dependency for Telegram commands.
+ * Routes through the appropriate provider based on model tier:
+ * - Workers AI models (free/light): `workers-ai/` provider path
+ * - Anthropic models (mid/premium): `anthropic/v1/messages` provider path
+ *
+ * All calls go through AI Gateway for Unified Billing.
  */
 async function invokeAgent(
   env: AppEnv['Bindings'],
   prompt: string,
+  agentName?: string,
 ): Promise<string> {
   try {
     const accountId = env.CF_AI_GATEWAY_ACCOUNT_ID;
     const gatewayId = env.CF_AI_GATEWAY_GATEWAY_ID;
     const apiKey = env.CLOUDFLARE_AI_GATEWAY_API_KEY;
-    const model = env.CF_AI_GATEWAY_MODEL || 'anthropic/claude-sonnet-4-6';
 
     if (!accountId || !gatewayId || !apiKey) {
       console.error('[Telegram] AI Gateway not configured');
       return '⚠️ AI Gateway is not configured. Set CF_AI_GATEWAY_* secrets.';
     }
 
-    // Extract the provider model name (e.g., "anthropic/claude-sonnet-4-6" → "claude-sonnet-4-6")
-    const modelName = model.includes('/') ? model.split('/').slice(1).join('/') : model;
+    // Resolve model based on agent tier
+    const { model, tier } = agentName
+      ? resolveModelForAgent(agentName)
+      : { model: env.CF_AI_GATEWAY_MODEL || 'anthropic/claude-sonnet-4-6', tier: 'mid' as ModelTier };
 
-    const url = `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/anthropic/v1/messages`;
+    const isWorkersAI = model.startsWith('workers-ai/');
+    const modelId = isWorkersAI ? model.replace('workers-ai/', '') : model;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'cf-aig-authorization': `Bearer ${apiKey}`,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: modelName,
-        max_tokens: 2048,
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-      }),
-    });
+    console.log(`[Telegram] Agent: ${agentName || 'default'}, tier: ${tier}, model: ${modelId}, provider: ${isWorkersAI ? 'workers-ai' : 'anthropic'}`);
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('[Telegram] AI Gateway error:', response.status, errText);
-      return `⚠️ Agent unavailable (AI Gateway returned ${response.status}). Try again later.`;
+    if (isWorkersAI) {
+      // Workers AI models via AI Gateway (Unified Billing)
+      const url = `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/workers-ai/${modelId}`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'cf-aig-authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          messages: [
+            { role: 'user', content: prompt },
+          ],
+          max_tokens: 2048,
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error(`[Telegram] Workers AI error (${tier}):`, response.status, errText);
+        return `⚠️ Agent unavailable (Workers AI returned ${response.status}). Try again later.`;
+      }
+
+      const data = (await response.json()) as {
+        result?: { response?: string };
+        response?: string;
+      };
+
+      // Workers AI returns { result: { response: "..." } }
+      const agentResponse = data.result?.response || data.response || '';
+
+      if (!agentResponse) {
+        console.error('[Telegram] Empty Workers AI response:', JSON.stringify(data));
+        return '⚠️ Agent returned an empty response.';
+      }
+
+      return agentResponse;
+    } else {
+      // Anthropic models via AI Gateway (Unified Billing)
+      // model format: "anthropic/claude-sonnet-4-20250514" → extract model name
+      const anthropicModel = modelId.startsWith('anthropic/')
+        ? modelId.replace('anthropic/', '')
+        : modelId;
+
+      const url = `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/anthropic/v1/messages`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'cf-aig-authorization': `Bearer ${apiKey}`,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: anthropicModel,
+          max_tokens: 2048,
+          messages: [
+            { role: 'user', content: prompt },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error(`[Telegram] Anthropic error (${tier}):`, response.status, errText);
+        return `⚠️ Agent unavailable (AI Gateway returned ${response.status}). Try again later.`;
+      }
+
+      const data = (await response.json()) as {
+        content?: Array<{ type: string; text?: string }>;
+      };
+
+      const textBlocks = data.content?.filter((b) => b.type === 'text') || [];
+      const agentResponse = textBlocks.map((b) => b.text || '').join('\n');
+
+      if (!agentResponse) {
+        console.error('[Telegram] Empty Anthropic response:', JSON.stringify(data));
+        return '⚠️ Agent returned an empty response.';
+      }
+
+      return agentResponse;
     }
-
-    const data = (await response.json()) as {
-      content?: Array<{ type: string; text?: string }>;
-    };
-
-    // Anthropic Messages API returns { content: [{ type: "text", text: "..." }] }
-    const textBlocks = data.content?.filter((b) => b.type === 'text') || [];
-    const agentResponse = textBlocks.map((b) => b.text || '').join('\n');
-
-    if (!agentResponse) {
-      console.error('[Telegram] Empty AI response:', JSON.stringify(data));
-      return '⚠️ Agent returned an empty response.';
-    }
-
-    return agentResponse;
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
     console.error('[Telegram] Agent invocation failed:', msg);
@@ -392,7 +470,7 @@ telegram.post('/webhook', async (c) => {
 
       // Build the prompt and invoke
       const prompt = buildAgentPrompt(parsed.agentName, parsed.action);
-      const response = await invokeAgent(c.env, prompt);
+      const response = await invokeAgent(c.env, prompt, parsed.agentName);
 
       // Send the agent's response
       const header = `🤖 *${parsed.agentName.replace(/-/g, ' ')}* → _${parsed.action.replace(/_/g, ' ')}_\n\n`;
