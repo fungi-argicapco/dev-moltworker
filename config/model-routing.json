@@ -52,7 +52,22 @@
     "data-model-agent": "light",
     "integration-architect-agent": "light",
     "gateway-integrations": "free",
-    "video-moment-analyzer": "light"
+    "video-moment-analyzer": "light",
+    "telegram-command-menu": "free",
+    "ciso-agent": "mid",
+    "policy-compliance-agent": "mid",
+    "coo-agent": "mid",
+    "sre-agent": "light",
+    "devops-agent": "free",
+    "growth-strategist-agent": "mid",
+    "sales-agent": "light",
+    "content-marketing-agent": "light",
+    "marketing-analyst-agent": "free",
+    "cpo-agent": "mid",
+    "ux-researcher-agent": "light",
+    "product-manager-agent": "light",
+    "chair-agent": "mid",
+    "training-agent": "free"
   },
   "task_overrides": {
     "client_facing_deliverable": "premium",
@@ -61,6 +76,14 @@
     "heartbeat": "free",
     "data_lookup": "free",
     "tax_filing_prep": "mid",
-    "security_audit": "mid"
+    "security_audit": "mid",
+    "incident_response": "mid",
+    "security_posture_report": "mid",
+    "proposal_generation": "mid",
+    "product_brief": "mid",
+    "agent_capability_audit": "light",
+    "content_creation": "light",
+    "campaign_analysis": "free",
+    "build_monitoring": "free"
   }
 }

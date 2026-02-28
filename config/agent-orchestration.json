@@ -66,6 +66,87 @@
         "timeout_seconds": 300,
         "model_escalation": false
       }
+    },
+    "security": {
+      "name": "Security Team",
+      "emoji": "🛡️",
+      "orchestrator": "ciso-agent",
+      "orchestrator_persona": null,
+      "members": [
+        "zero-trust-agent",
+        "cloudflare-security-agent",
+        "policy-compliance-agent"
+      ],
+      "spawn_config": {
+        "max_depth": 2,
+        "max_concurrent": 3,
+        "timeout_seconds": 600,
+        "model_escalation": true
+      }
+    },
+    "operations": {
+      "name": "Operations Team",
+      "emoji": "🔧",
+      "orchestrator": "coo-agent",
+      "orchestrator_persona": null,
+      "members": [
+        "sre-agent",
+        "devops-agent"
+      ],
+      "spawn_config": {
+        "max_depth": 2,
+        "max_concurrent": 4,
+        "timeout_seconds": 600,
+        "model_escalation": true
+      }
+    },
+    "growth": {
+      "name": "Growth & Marketing Team",
+      "emoji": "🚀",
+      "orchestrator": "growth-strategist-agent",
+      "orchestrator_persona": null,
+      "members": [
+        "sales-agent",
+        "content-marketing-agent",
+        "marketing-analyst-agent"
+      ],
+      "spawn_config": {
+        "max_depth": 2,
+        "max_concurrent": 4,
+        "timeout_seconds": 900,
+        "model_escalation": true
+      }
+    },
+    "product": {
+      "name": "Product Team",
+      "emoji": "📦",
+      "orchestrator": "cpo-agent",
+      "orchestrator_persona": null,
+      "members": [
+        "ux-researcher-agent",
+        "product-manager-agent"
+      ],
+      "spawn_config": {
+        "max_depth": 2,
+        "max_concurrent": 3,
+        "timeout_seconds": 900,
+        "model_escalation": true
+      }
+    },
+    "talent": {
+      "name": "Human-AI Relations Team",
+      "emoji": "🤖",
+      "orchestrator": "chair-agent",
+      "orchestrator_persona": null,
+      "members": [
+        "training-agent"
+      ],
+      "spawn_config": {
+        "max_depth": 1,
+        "max_concurrent": 2,
+        "timeout_seconds": 600,
+        "model_escalation": false
+      }
     }
   },
   "delegation_rules": {
@@ -209,6 +290,108 @@
         ],
         "agent": "healthcare-compliance-agent",
         "team": "legal"
+      },
+      {
+        "keywords": [
+          "security",
+          "breach",
+          "token",
+          "vulnerability",
+          "pentest",
+          "audit",
+          "firewall",
+          "WAF"
+        ],
+        "agent": "ciso-agent",
+        "team": "security"
+      },
+      {
+        "keywords": [
+          "policy",
+          "AI ethics",
+          "data governance",
+          "NIST",
+          "SOC 2",
+          "ISO 27001",
+          "acceptable use"
+        ],
+        "agent": "policy-compliance-agent",
+        "team": "security"
+      },
+      {
+        "keywords": [
+          "deploy",
+          "build",
+          "pipeline",
+          "CI/CD",
+          "release",
+          "staging",
+          "rollback"
+        ],
+        "agent": "devops-agent",
+        "team": "operations"
+      },
+      {
+        "keywords": [
+          "uptime",
+          "latency",
+          "SLO",
+          "monitoring",
+          "alert",
+          "incident",
+          "outage"
+        ],
+        "agent": "sre-agent",
+        "team": "operations"
+      },
+      {
+        "keywords": [
+          "lead",
+          "prospect",
+          "pipeline",
+          "deal",
+          "proposal",
+          "outreach",
+          "client acquisition"
+        ],
+        "agent": "sales-agent",
+        "team": "growth"
+      },
+      {
+        "keywords": [
+          "blog",
+          "social media",
+          "content",
+          "SEO",
+          "newsletter",
+          "marketing campaign"
+        ],
+        "agent": "content-marketing-agent",
+        "team": "growth"
+      },
+      {
+        "keywords": [
+          "roadmap",
+          "feature",
+          "product",
+          "PRD",
+          "user story",
+          "sprint",
+          "backlog"
+        ],
+        "agent": "cpo-agent",
+        "team": "product"
+      },
+      {
+        "keywords": [
+          "agent audit",
+          "agent performance",
+          "team composition",
+          "skill gap",
+          "capability"
+        ],
+        "agent": "chair-agent",
+        "team": "talent"
       }
     ]
   },
@@ -282,6 +465,84 @@
         }
       ],
       "coordinator": "cfo-agent"
+    },
+    "security_incident": {
+      "description": "Security incident response coordination",
+      "agents": [
+        {
+          "agent": "ciso-agent",
+          "task": "Incident classification and coordination"
+        },
+        {
+          "agent": "zero-trust-agent",
+          "task": "Token validation and revocation"
+        },
+        {
+          "agent": "cloudflare-security-agent",
+          "task": "Infrastructure lockdown"
+        },
+        {
+          "agent": "sre-agent",
+          "task": "Service health monitoring"
+        },
+        {
+          "agent": "litigation-disputes-agent",
+          "task": "Legal exposure assessment"
+        }
+      ],
+      "coordinator": "ciso-agent"
+    },
+    "product_launch": {
+      "description": "New feature or product launch coordination",
+      "agents": [
+        {
+          "agent": "product-manager-agent",
+          "task": "Launch checklist and release notes"
+        },
+        {
+          "agent": "content-marketing-agent",
+          "task": "Announcement content"
+        },
+        {
+          "agent": "devops-agent",
+          "task": "Deployment orchestration"
+        },
+        {
+          "agent": "sre-agent",
+          "task": "Launch monitoring"
+        },
+        {
+          "agent": "ciso-agent",
+          "task": "Security review sign-off"
+        }
+      ],
+      "coordinator": "cpo-agent"
+    },
+    "new_client_setup": {
+      "description": "Full new client onboarding workflow",
+      "agents": [
+        {
+          "agent": "sales-agent",
+          "task": "SOW finalization"
+        },
+        {
+          "agent": "corporate-contracts-agent",
+          "task": "Contract execution"
+        },
+        {
+          "agent": "controller-agent",
+          "task": "Billing setup"
+        },
+        {
+          "agent": "ciso-agent",
+          "task": "Security onboarding"
+        },
+        {
+          "agent": "healthcare-compliance-agent",
+          "task": "HIPAA BAA (if applicable)"
+        }
+      ],
+      "coordinator": "growth-strategist-agent"
     }
   },
   "escalation_policy": {
@@ -290,13 +551,20 @@
       "Tax filing submission (prepare only, human files)",
       "Medical license application submission",
       "Trade execution over $10K (require Telegram approval)",
-      "Any output flagged as potential legal advice"
+      "Any output flagged as potential legal advice",
+      "SEV-1 or SEV-2 security incidents",
+      "Production deployment approval",
+      "New client contract signing",
+      "Agent deprecation or removal decisions"
     ],
     "to_premium_model": [
       "Client-facing deliverables (SOWs, reports)",
       "Contract review with red flags detected",
       "Complex multi-jurisdiction analysis",
-      "Strategic financial modeling (M&A, fundraising)"
+      "Strategic financial modeling (M&A, fundraising)",
+      "Security incident post-mortem analysis",
+      "Product roadmap strategic decisions",
+      "Competitive analysis with strategic recommendations"
     ]
   }
 }

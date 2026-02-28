@@ -11,6 +11,22 @@
       "description": "⚖️ Legal team dashboard"
     },
     {
+      "command": "security",
+      "description": "🛡️ Security team dashboard"
+    },
+    {
+      "command": "ops",
+      "description": "🔧 Operations team dashboard"
+    },
+    {
+      "command": "growth",
+      "description": "🚀 Growth & marketing dashboard"
+    },
+    {
+      "command": "product",
+      "description": "📦 Product team dashboard"
+    },
+    {
       "command": "tax",
       "description": "🧮 Quick: quarterly tax estimate"
     },
@@ -25,6 +41,10 @@
     {
       "command": "contract",
       "description": "📜 Quick: contract review triage"
+    },
+    {
+      "command": "agents",
+      "description": "🤖 Agent team health & audit"
     },
     {
       "command": "team",
@@ -122,27 +142,171 @@
         ]
       ]
     },
-    "team_menu": {
-      "text": "👥 **Agent Team Overview**\n13 agents across 2 teams:",
+    "security_menu": {
+      "text": "🛡️ **Security Team**\nSelect an action:",
       "buttons": [
         [
           {
-            "text": "🏦 Financial Team (7)",
+            "text": "🔐 Token Health",
+            "callback_data": "agent:zero-trust:token_sweep"
+          },
+          {
+            "text": "🏗️ Infra Audit",
+            "callback_data": "agent:cloudflare-security:full_audit"
+          }
+        ],
+        [
+          {
+            "text": "📋 Policy Review",
+            "callback_data": "agent:policy-compliance:policy_status"
+          },
+          {
+            "text": "📊 SOC 2 Status",
+            "callback_data": "agent:policy-compliance:soc2_readiness"
+          }
+        ],
+        [
+          {
+            "text": "🛡️ Full Security Posture",
+            "callback_data": "agent:ciso:security_posture"
+          }
+        ]
+      ]
+    },
+    "ops_menu": {
+      "text": "🔧 **Operations Team**\nSelect an action:",
+      "buttons": [
+        [
+          {
+            "text": "📊 Platform Health",
+            "callback_data": "agent:sre:health_check"
+          },
+          {
+            "text": "🚀 Build Status",
+            "callback_data": "agent:devops:build_status"
+          }
+        ],
+        [
+          {
+            "text": "📈 SLO Dashboard",
+            "callback_data": "agent:sre:slo_dashboard"
+          },
+          {
+            "text": "💸 Cost Report",
+            "callback_data": "agent:coo:cost_report"
+          }
+        ],
+        [
+          {
+            "text": "🔧 Full Ops Report",
+            "callback_data": "agent:coo:full_report"
+          }
+        ]
+      ]
+    },
+    "growth_menu": {
+      "text": "🚀 **Growth & Marketing Team**\nSelect an action:",
+      "buttons": [
+        [
+          {
+            "text": "📈 Pipeline",
+            "callback_data": "agent:sales:pipeline_status"
+          },
+          {
+            "text": "📝 Content Calendar",
+            "callback_data": "agent:content-marketing:calendar"
+          }
+        ],
+        [
+          {
+            "text": "📊 Campaign Stats",
+            "callback_data": "agent:marketing-analyst:campaign_report"
+          },
+          {
+            "text": "🤝 Proposals",
+            "callback_data": "agent:sales:active_proposals"
+          }
+        ],
+        [
+          {
+            "text": "🚀 Full Growth Report",
+            "callback_data": "agent:growth-strategist:full_report"
+          }
+        ]
+      ]
+    },
+    "product_menu": {
+      "text": "📦 **Product Team**\nSelect an action:",
+      "buttons": [
+        [
+          {
+            "text": "🗺️ Roadmap",
+            "callback_data": "agent:cpo:roadmap"
+          },
+          {
+            "text": "📋 Sprint Status",
+            "callback_data": "agent:product-manager:sprint_status"
+          }
+        ],
+        [
+          {
+            "text": "🔬 UX Findings",
+            "callback_data": "agent:ux-researcher:findings"
+          },
+          {
+            "text": "📊 Product Metrics",
+            "callback_data": "agent:cpo:metrics"
+          }
+        ],
+        [
+          {
+            "text": "📦 Full Product Brief",
+            "callback_data": "agent:cpo:full_brief"
+          }
+        ]
+      ]
+    },
+    "team_menu": {
+      "text": "👥 **Agent Team Overview**\n40 agents across 8 teams:",
+      "buttons": [
+        [
+          {
+            "text": "🏦 Financial (7)",
             "callback_data": "menu:finance"
           },
           {
-            "text": "⚖️ Legal Team (6)",
+            "text": "⚖️ Legal (6)",
             "callback_data": "menu:legal"
           }
         ],
         [
           {
-            "text": "🔔 Active Alerts",
-            "callback_data": "dashboard:alerts"
+            "text": "🛡️ Security (4)",
+            "callback_data": "menu:security"
           },
           {
-            "text": "📅 Upcoming Deadlines",
-            "callback_data": "dashboard:deadlines"
+            "text": "🔧 Operations (3)",
+            "callback_data": "menu:ops"
+          }
+        ],
+        [
+          {
+            "text": "🚀 Growth (4)",
+            "callback_data": "menu:growth"
+          },
+          {
+            "text": "📦 Product (3)",
+            "callback_data": "menu:product"
+          }
+        ],
+        [
+          {
+            "text": "🤖 Talent (2)",
+            "callback_data": "agent:chair:team_audit"
+          },
+          {
+            "text": "⚙️ Platform (13)",
+            "callback_data": "dashboard:platform"
           }
         ],
         [
@@ -154,7 +318,7 @@
       ]
     },
     "help_menu": {
-      "text": "❓ **Available Commands**\n\n**Quick Actions:**\n/tax — Quarterly tax estimate\n/cash — Cash position brief\n/hipaa — HIPAA compliance status\n/contract — Contract review\n\n**Dashboards:**\n/finance — Financial team menu\n/legal — Legal team menu\n/team — Full team overview\n/compliance — Compliance calendar\n\nOr just type a question — Aria will route it to the right agent.",
+      "text": "❓ **Available Commands**\n\n**Quick Actions:**\n/tax — Quarterly tax estimate\n/cash — Cash position brief\n/hipaa — HIPAA compliance status\n/contract — Contract review\n\n**Team Dashboards:**\n/finance — Financial team\n/legal — Legal team\n/security — Security team\n/ops — Operations team\n/growth — Growth & marketing\n/product — Product team\n/agents — Agent health audit\n\n**Overview:**\n/team — All 8 teams\n/compliance — Compliance calendar\n\nOr just type a question — Omega will route it to the right agent.",
       "buttons": [
         [
           {
@@ -166,7 +330,27 @@
             "callback_data": "menu:legal"
           },
           {
-            "text": "👥 Team",
+            "text": "🛡️ Security",
+            "callback_data": "menu:security"
+          }
+        ],
+        [
+          {
+            "text": "🔧 Ops",
+            "callback_data": "menu:ops"
+          },
+          {
+            "text": "🚀 Growth",
+            "callback_data": "menu:growth"
+          },
+          {
+            "text": "📦 Product",
+            "callback_data": "menu:product"
+          }
+        ],
+        [
+          {
+            "text": "👥 All Teams",
             "callback_data": "menu:team"
           }
         ]
