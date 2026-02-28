@@ -1,5 +1,6 @@
 ---
 name: litigation-disputes-agent
+model_tier: mid
 description: Litigation risk assessment and dispute resolution agent. Monitors court records via PACER, manages litigation holds, tracks statute of limitations, performs settlement cost-benefit analysis, and coordinates insurance coverage.
 ---
 

@@ -1,0 +1,190 @@
+{
+  "version": "1.0",
+  "description": "Telegram Bot command menu and inline keyboard definitions for Hardshell agent navigation.",
+  "bot_commands": [
+    {
+      "command": "finance",
+      "description": "💰 Financial team dashboard"
+    },
+    {
+      "command": "legal",
+      "description": "⚖️ Legal team dashboard"
+    },
+    {
+      "command": "tax",
+      "description": "🧮 Quick: quarterly tax estimate"
+    },
+    {
+      "command": "cash",
+      "description": "💵 Quick: cash position brief"
+    },
+    {
+      "command": "hipaa",
+      "description": "🏥 Quick: HIPAA compliance status"
+    },
+    {
+      "command": "contract",
+      "description": "📜 Quick: contract review triage"
+    },
+    {
+      "command": "team",
+      "description": "👥 Full agent team overview"
+    },
+    {
+      "command": "compliance",
+      "description": "📋 Compliance calendar (all teams)"
+    },
+    {
+      "command": "help",
+      "description": "❓ Available commands and navigation"
+    }
+  ],
+  "inline_keyboards": {
+    "finance_menu": {
+      "text": "🏦 **Financial Team**\nSelect an action:",
+      "buttons": [
+        [
+          {
+            "text": "💵 Cash Brief",
+            "callback_data": "agent:treasury:cash_brief"
+          },
+          {
+            "text": "📊 Monthly P&L",
+            "callback_data": "agent:controller:monthly_close"
+          }
+        ],
+        [
+          {
+            "text": "🧮 Tax Estimate",
+            "callback_data": "agent:tax-strategist:quarterly_estimate"
+          },
+          {
+            "text": "📈 Portfolio",
+            "callback_data": "agent:quant:portfolio_analysis"
+          }
+        ],
+        [
+          {
+            "text": "🔍 Burn Rate",
+            "callback_data": "agent:financial-analyst:burn_rate"
+          },
+          {
+            "text": "📋 Investor Update",
+            "callback_data": "agent:investor-relations:monthly_update"
+          }
+        ],
+        [
+          {
+            "text": "💰 Full CFO Brief",
+            "callback_data": "agent:cfo:full_brief"
+          }
+        ]
+      ]
+    },
+    "legal_menu": {
+      "text": "⚖️ **Legal Team**\nSelect an action:",
+      "buttons": [
+        [
+          {
+            "text": "📜 Contract Review",
+            "callback_data": "agent:corporate-contracts:review_triage"
+          },
+          {
+            "text": "🏥 HIPAA Check",
+            "callback_data": "agent:healthcare-compliance:hipaa_status"
+          }
+        ],
+        [
+          {
+            "text": "📋 Compliance Calendar",
+            "callback_data": "agent:regulatory-compliance:calendar"
+          },
+          {
+            "text": "🔍 Trademark Search",
+            "callback_data": "agent:ip-privacy:trademark_search"
+          }
+        ],
+        [
+          {
+            "text": "⚠️ Risk Dashboard",
+            "callback_data": "agent:litigation-disputes:risk_dashboard"
+          },
+          {
+            "text": "🏢 Entity Status",
+            "callback_data": "agent:corporate-contracts:entity_status"
+          }
+        ],
+        [
+          {
+            "text": "⚖️ Full Legal Brief",
+            "callback_data": "agent:general-counsel:full_brief"
+          }
+        ]
+      ]
+    },
+    "team_menu": {
+      "text": "👥 **Agent Team Overview**\n13 agents across 2 teams:",
+      "buttons": [
+        [
+          {
+            "text": "🏦 Financial Team (7)",
+            "callback_data": "menu:finance"
+          },
+          {
+            "text": "⚖️ Legal Team (6)",
+            "callback_data": "menu:legal"
+          }
+        ],
+        [
+          {
+            "text": "🔔 Active Alerts",
+            "callback_data": "dashboard:alerts"
+          },
+          {
+            "text": "📅 Upcoming Deadlines",
+            "callback_data": "dashboard:deadlines"
+          }
+        ],
+        [
+          {
+            "text": "📊 Cost Dashboard",
+            "callback_data": "dashboard:costs"
+          }
+        ]
+      ]
+    },
+    "help_menu": {
+      "text": "❓ **Available Commands**\n\n**Quick Actions:**\n/tax — Quarterly tax estimate\n/cash — Cash position brief\n/hipaa — HIPAA compliance status\n/contract — Contract review\n\n**Dashboards:**\n/finance — Financial team menu\n/legal — Legal team menu\n/team — Full team overview\n/compliance — Compliance calendar\n\nOr just type a question — Aria will route it to the right agent.",
+      "buttons": [
+        [
+          {
+            "text": "🏦 Finance",
+            "callback_data": "menu:finance"
+          },
+          {
+            "text": "⚖️ Legal",
+            "callback_data": "menu:legal"
+          },
+          {
+            "text": "👥 Team",
+            "callback_data": "menu:team"
+          }
+        ]
+      ]
+    }
+  },
+  "callback_routing": {
+    "agent:{agent}:{action}": "Route to specified agent with action context",
+    "menu:{menu_name}": "Show the specified inline keyboard menu",
+    "dashboard:{dashboard}": "Generate and show the specified dashboard"
+  },
+  "botfather_registration": {
+    "note": "Run these commands in @BotFather to register the command menu:",
+    "steps": [
+      "1. Open @BotFather in Telegram",
+      "2. Send /setcommands",
+      "3. Select your bot",
+      "4. Paste the commands from bot_commands array above (one per line: command - description)"
+    ]
+  }
+}

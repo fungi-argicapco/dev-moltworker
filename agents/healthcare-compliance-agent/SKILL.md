@@ -1,5 +1,6 @@
 ---
 name: healthcare-compliance-agent
+model_tier: mid
 description: Healthcare-specific compliance agent. Covers HIPAA (Privacy, Security, Breach Notification rules), state telehealth regulations, DEA/controlled substance compliance, medical board licensing, BAA management, and clinical billing compliance (False Claims Act, Anti-Kickback, Stark Law).
 ---
 

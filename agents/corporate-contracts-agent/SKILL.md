@@ -1,5 +1,6 @@
 ---
 name: corporate-contracts-agent
+model_tier: mid
 description: Corporate law and contract management agent. Handles entity formation (LLC, S-Corp, C-Corp), contract drafting (NDAs, MSAs, SOWs, SaaS agreements), M&A support, and corporate governance documentation.
 ---
 

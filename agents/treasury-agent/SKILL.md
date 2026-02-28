@@ -1,5 +1,6 @@
 ---
 name: treasury-agent
+model_tier: light
 description: Cash management and banking agent. Uses Mercury MCP for real-time cash position monitoring, bill pay scheduling, yield optimization, and cash flow forecasting.
 ---
 

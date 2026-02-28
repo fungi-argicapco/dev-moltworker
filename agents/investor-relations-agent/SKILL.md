@@ -1,5 +1,6 @@
 ---
 name: investor-relations-agent
+model_tier: mid
 description: Investor relations and board reporting agent. Generates board decks, investor updates, KPI dashboards, cap table analysis, and fundraising pipeline tracking via Linear.
 ---
 

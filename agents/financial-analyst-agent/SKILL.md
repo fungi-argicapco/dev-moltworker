@@ -1,5 +1,6 @@
 ---
 name: financial-analyst-agent
+model_tier: light
 description: Financial modeling and forecasting agent. Provides scenario analysis, unit economics, burn rate calculations, Monte Carlo simulation, and budget variance analysis.
 ---
 

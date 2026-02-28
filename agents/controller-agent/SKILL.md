@@ -1,5 +1,6 @@
 ---
 name: controller-agent
+model_tier: free
 description: Bookkeeping, P&L reporting, monthly close, and reconciliation agent. Integrates with Wave, QuickBooks, and Xero for chart of accounts management, invoice tracking, and expense categorization.
 ---
 

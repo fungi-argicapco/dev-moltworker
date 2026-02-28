@@ -1,5 +1,6 @@
 ---
 name: general-counsel-agent
+model_tier: mid
 description: Legal team orchestrator. Handles contract review triage, compliance calendar oversight, cross-team coordination with CFO, and client-facing legal strategy. Delegates specialty work to corporate, regulatory, IP, litigation, and healthcare agents.
 ---
 

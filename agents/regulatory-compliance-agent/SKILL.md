@@ -1,5 +1,6 @@
 ---
 name: regulatory-compliance-agent
+model_tier: mid
 description: Multi-jurisdiction regulatory compliance agent. Covers federal (SEC, FTC, DOL), state (all 50), county/municipal, and industry-specific regulations for finance (FINRA, FinCEN) and healthcare (HHS, FDA, CMS).
 ---
 

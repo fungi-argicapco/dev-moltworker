@@ -1,0 +1,302 @@
+{
+  "version": "1.0",
+  "description": "Multi-agent orchestration configuration for Hardshell platform. Defines team hierarchy, delegation rules, and sub-agent spawning config.",
+  "teams": {
+    "financial": {
+      "name": "Financial Team",
+      "emoji": "🏦",
+      "orchestrator": "cfo-agent",
+      "orchestrator_persona": "Aria",
+      "members": [
+        "controller-agent",
+        "tax-strategist-agent",
+        "treasury-agent",
+        "investor-relations-agent",
+        "financial-analyst-agent",
+        "quant-agent"
+      ],
+      "spawn_config": {
+        "max_depth": 2,
+        "max_concurrent": 4,
+        "timeout_seconds": 900,
+        "model_escalation": true
+      }
+    },
+    "legal": {
+      "name": "Legal Team",
+      "emoji": "⚖️",
+      "orchestrator": "general-counsel-agent",
+      "orchestrator_persona": null,
+      "members": [
+        "corporate-contracts-agent",
+        "regulatory-compliance-agent",
+        "ip-privacy-agent",
+        "litigation-disputes-agent",
+        "healthcare-compliance-agent"
+      ],
+      "spawn_config": {
+        "max_depth": 2,
+        "max_concurrent": 4,
+        "timeout_seconds": 900,
+        "model_escalation": true
+      }
+    },
+    "platform": {
+      "name": "Platform Team",
+      "emoji": "⚙️",
+      "orchestrator": null,
+      "members": [
+        "discovery-framework-agent",
+        "crm-analyst-agent",
+        "linear-issue-manager",
+        "onboarding-playbook-agent",
+        "zero-trust-agent",
+        "cloudflare-config-agent",
+        "cloudflare-deployment-agent",
+        "cloudflare-security-agent",
+        "data-model-agent",
+        "integration-architect-agent",
+        "gateway-integrations",
+        "video-moment-analyzer",
+        "telegram-command-menu"
+      ],
+      "spawn_config": {
+        "max_depth": 1,
+        "max_concurrent": 8,
+        "timeout_seconds": 300,
+        "model_escalation": false
+      }
+    }
+  },
+  "delegation_rules": {
+    "routing": [
+      {
+        "keywords": [
+          "tax",
+          "quarterly estimate",
+          "1040",
+          "deduction",
+          "capital gains",
+          "tax-loss"
+        ],
+        "agent": "tax-strategist-agent",
+        "team": "financial"
+      },
+      {
+        "keywords": [
+          "cash",
+          "balance",
+          "mercury",
+          "treasury",
+          "yield",
+          "bill pay"
+        ],
+        "agent": "treasury-agent",
+        "team": "financial"
+      },
+      {
+        "keywords": [
+          "P&L",
+          "bookkeeping",
+          "reconcile",
+          "invoice",
+          "expense",
+          "monthly close"
+        ],
+        "agent": "controller-agent",
+        "team": "financial"
+      },
+      {
+        "keywords": [
+          "investor",
+          "board deck",
+          "KPI",
+          "fundraise",
+          "cap table"
+        ],
+        "agent": "investor-relations-agent",
+        "team": "financial"
+      },
+      {
+        "keywords": [
+          "forecast",
+          "scenario",
+          "burn rate",
+          "runway",
+          "monte carlo",
+          "budget"
+        ],
+        "agent": "financial-analyst-agent",
+        "team": "financial"
+      },
+      {
+        "keywords": [
+          "trade",
+          "portfolio",
+          "backtest",
+          "stock",
+          "option",
+          "forex",
+          "bond",
+          "sharpe"
+        ],
+        "agent": "quant-agent",
+        "team": "financial"
+      },
+      {
+        "keywords": [
+          "contract",
+          "NDA",
+          "MSA",
+          "SOW",
+          "entity",
+          "LLC",
+          "S-Corp",
+          "incorporation"
+        ],
+        "agent": "corporate-contracts-agent",
+        "team": "legal"
+      },
+      {
+        "keywords": [
+          "regulation",
+          "compliance",
+          "SEC",
+          "FINRA",
+          "license",
+          "filing",
+          "annual report"
+        ],
+        "agent": "regulatory-compliance-agent",
+        "team": "legal"
+      },
+      {
+        "keywords": [
+          "trademark",
+          "patent",
+          "IP",
+          "privacy",
+          "GDPR",
+          "CCPA",
+          "data breach",
+          "open source"
+        ],
+        "agent": "ip-privacy-agent",
+        "team": "legal"
+      },
+      {
+        "keywords": [
+          "lawsuit",
+          "litigation",
+          "dispute",
+          "court",
+          "PACER",
+          "settlement",
+          "statute"
+        ],
+        "agent": "litigation-disputes-agent",
+        "team": "legal"
+      },
+      {
+        "keywords": [
+          "HIPAA",
+          "telehealth",
+          "DEA",
+          "medical license",
+          "BAA",
+          "PHI",
+          "healthcare"
+        ],
+        "agent": "healthcare-compliance-agent",
+        "team": "legal"
+      }
+    ]
+  },
+  "cross_team_workflows": {
+    "state_expansion": {
+      "description": "Client expanding to new state (e.g., Dr. Lowe opening Oregon practice)",
+      "agents": [
+        {
+          "agent": "regulatory-compliance-agent",
+          "task": "State registration requirements"
+        },
+        {
+          "agent": "healthcare-compliance-agent",
+          "task": "Medical licensing + telehealth regs"
+        },
+        {
+          "agent": "corporate-contracts-agent",
+          "task": "Foreign qualification filing"
+        },
+        {
+          "agent": "tax-strategist-agent",
+          "task": "Tax nexus analysis"
+        },
+        {
+          "agent": "controller-agent",
+          "task": "New state expense tracking setup"
+        }
+      ],
+      "coordinator": "general-counsel-agent"
+    },
+    "vendor_onboarding": {
+      "description": "New vendor contract with financial setup",
+      "agents": [
+        {
+          "agent": "corporate-contracts-agent",
+          "task": "Contract review"
+        },
+        {
+          "agent": "controller-agent",
+          "task": "Vendor expense setup"
+        },
+        {
+          "agent": "ip-privacy-agent",
+          "task": "Data privacy assessment (if PHI)"
+        }
+      ],
+      "coordinator": "cfo-agent"
+    },
+    "annual_planning": {
+      "description": "Year-end tax planning + compliance review",
+      "agents": [
+        {
+          "agent": "tax-strategist-agent",
+          "task": "Year-end tax optimization"
+        },
+        {
+          "agent": "regulatory-compliance-agent",
+          "task": "Annual filing inventory"
+        },
+        {
+          "agent": "healthcare-compliance-agent",
+          "task": "HIPAA annual risk assessment"
+        },
+        {
+          "agent": "financial-analyst-agent",
+          "task": "Next year budget/forecast"
+        },
+        {
+          "agent": "controller-agent",
+          "task": "Year-end close"
+        }
+      ],
+      "coordinator": "cfo-agent"
+    }
+  },
+  "escalation_policy": {
+    "to_human": [
+      "Any matter scored 9-10 on litigation risk scale",
+      "Tax filing submission (prepare only, human files)",
+      "Medical license application submission",
+      "Trade execution over $10K (require Telegram approval)",
+      "Any output flagged as potential legal advice"
+    ],
+    "to_premium_model": [
+      "Client-facing deliverables (SOWs, reports)",
+      "Contract review with red flags detected",
+      "Complex multi-jurisdiction analysis",
+      "Strategic financial modeling (M&A, fundraising)"
+    ]
+  }
+}

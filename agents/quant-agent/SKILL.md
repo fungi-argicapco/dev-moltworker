@@ -1,5 +1,6 @@
 ---
 name: quant-agent
+model_tier: light
 description: Quantitative analysis and market intelligence agent. Covers equities, options, forex, commodities, bonds, and cash equivalents. Provides backtesting, portfolio optimization, technical analysis, and paper/live trading via Alpaca API.
 ---
 

@@ -1,0 +1,66 @@
+{
+  "version": "1.0",
+  "description": "Model routing configuration for Hardshell agent skills. Maps each agent to a model tier to optimize cost vs capability.",
+  "tiers": {
+    "free": {
+      "model": "workers-ai/@cf/meta/llama-4-scout-17b-16e-instruct",
+      "description": "Workers AI free tier (Unified Billing). Use for routine formatting, lookups, categorization.",
+      "cost_per_1m_tokens": 0
+    },
+    "light": {
+      "model": "workers-ai/@cf/meta/llama-4-maverick-17b-128e-instruct",
+      "description": "Workers AI larger model. Use for structured analysis that needs more context.",
+      "cost_per_1m_tokens": 0
+    },
+    "mid": {
+      "model": "anthropic/claude-sonnet-4-20250514",
+      "description": "Mid-tier reasoning. Use for legal analysis, financial modeling, multi-step logic.",
+      "cost_per_1m_tokens": 3
+    },
+    "premium": {
+      "model": "anthropic/claude-opus-4-20250514",
+      "description": "Maximum reasoning. Use for strategic decisions, complex legal, client-facing deliverables.",
+      "cost_per_1m_tokens": 15
+    }
+  },
+  "fallback_chain": [
+    "free",
+    "mid"
+  ],
+  "agent_tiers": {
+    "cfo-agent": "mid",
+    "controller-agent": "free",
+    "tax-strategist-agent": "mid",
+    "treasury-agent": "light",
+    "investor-relations-agent": "mid",
+    "financial-analyst-agent": "light",
+    "quant-agent": "light",
+    "general-counsel-agent": "mid",
+    "corporate-contracts-agent": "mid",
+    "regulatory-compliance-agent": "mid",
+    "ip-privacy-agent": "light",
+    "litigation-disputes-agent": "mid",
+    "healthcare-compliance-agent": "mid",
+    "discovery-framework-agent": "free",
+    "crm-analyst-agent": "free",
+    "linear-issue-manager": "free",
+    "onboarding-playbook-agent": "light",
+    "zero-trust-agent": "light",
+    "cloudflare-config-agent": "free",
+    "cloudflare-deployment-agent": "free",
+    "cloudflare-security-agent": "light",
+    "data-model-agent": "light",
+    "integration-architect-agent": "light",
+    "gateway-integrations": "free",
+    "video-moment-analyzer": "light"
+  },
+  "task_overrides": {
+    "client_facing_deliverable": "premium",
+    "sow_generation": "premium",
+    "contract_review": "mid",
+    "heartbeat": "free",
+    "data_lookup": "free",
+    "tax_filing_prep": "mid",
+    "security_audit": "mid"
+  }
+}

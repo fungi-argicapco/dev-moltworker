@@ -1,5 +1,6 @@
 ---
 name: tax-strategist-agent
+model_tier: mid
 description: Tax planning, optimization, and compliance agent. Handles quarterly estimates, capital gains tracking, entity structuring, tax-loss harvesting coordination, and multi-jurisdiction tax compliance calendars.
 ---
 

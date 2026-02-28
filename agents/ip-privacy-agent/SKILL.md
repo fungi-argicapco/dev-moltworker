@@ -1,5 +1,6 @@
 ---
 name: ip-privacy-agent
+model_tier: light
 description: Intellectual property and data privacy agent. Handles patent/trademark searches via USPTO API, privacy compliance (GDPR, CCPA/CPRA, HIPAA), data protection impact assessments, open source license scanning, and trade secret management.
 ---
 
