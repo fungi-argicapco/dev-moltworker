@@ -1,0 +1,15 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "hardshell-prod-outbound",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-05-06",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "observability": {
+    "enabled": true
+  }
+  // No bindings needed — this worker only inspects and forwards fetch requests.
+  // Domain whitelist is hardcoded in src/index.ts.
+  // Future: move whitelist to KV for dynamic updates without redeploy.
+}

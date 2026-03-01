@@ -7,11 +7,13 @@ export interface MoltbotEnv {
   Sandbox: DurableObjectNamespace<Sandbox>;
   ASSETS: Fetcher; // Assets binding for admin UI static files
   MOLTBOT_BUCKET: R2Bucket; // R2 bucket for persistent storage
+  OMEGA_PROFILES?: KVNamespace; // KV for Omega user knowledge graph
   // Cloudflare AI Gateway configuration (preferred)
   CF_AI_GATEWAY_ACCOUNT_ID?: string; // Cloudflare account ID for AI Gateway
   CF_AI_GATEWAY_GATEWAY_ID?: string; // AI Gateway ID
   CLOUDFLARE_AI_GATEWAY_API_KEY?: string; // API key for requests through the gateway
   CF_AI_GATEWAY_MODEL?: string; // Override model: "provider/model-id" e.g. "workers-ai/@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+  CF_ACCOUNT_ID?: string; // Cloudflare account ID (for Workers AI direct API)
   // Legacy AI Gateway configuration (still supported for backward compat)
   AI_GATEWAY_API_KEY?: string; // API key for the provider configured in AI Gateway
   AI_GATEWAY_BASE_URL?: string; // AI Gateway URL (e.g., https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/anthropic)
@@ -24,8 +26,12 @@ export interface MoltbotEnv {
   E2E_TEST_MODE?: string; // Set to 'true' for E2E tests (skips CF Access auth but keeps device pairing)
   DEBUG_ROUTES?: string; // Set to 'true' to enable /debug/* routes
   SANDBOX_SLEEP_AFTER?: string; // How long before sandbox sleeps: 'never' (default), or duration like '10m', '1h'
+  HARDSHELL_TELEGRAM_BOT_TOKEN?: string; // Omega's dedicated Telegram bot (HardshellStagingBot)
   TELEGRAM_BOT_TOKEN?: string;
   TELEGRAM_DM_POLICY?: string;
+  TELEGRAM_DM_ALLOW_FROM?: string; // Comma-separated Telegram user IDs
+  TELEGRAM_GROUP_POLICY?: string;
+  TELEGRAM_WEBHOOK_SECRET?: string; // Secret token for webhook validation (set via wrangler secret)
   DISCORD_BOT_TOKEN?: string;
   DISCORD_DM_POLICY?: string;
   SLACK_BOT_TOKEN?: string;
@@ -33,15 +39,19 @@ export interface MoltbotEnv {
   // Cloudflare Access configuration for admin routes
   CF_ACCESS_TEAM_DOMAIN?: string; // e.g., 'myteam.cloudflareaccess.com'
   CF_ACCESS_AUD?: string; // Application Audience (AUD) tag
-  // R2 credentials for bucket mounting (set via wrangler secret)
-  R2_ACCESS_KEY_ID?: string;
-  R2_SECRET_ACCESS_KEY?: string;
-  R2_BUCKET_NAME?: string; // Override bucket name (default: 'moltbot-data')
-  CF_ACCOUNT_ID?: string; // Cloudflare account ID for R2 endpoint
   // Browser Rendering binding for CDP shim
   BROWSER?: Fetcher;
+  // Workers AI binding — used for free/light tier models via AI Gateway
+  AI?: Ai;
   CDP_SECRET?: string; // Shared secret for CDP endpoint authentication
   WORKER_URL?: string; // Public URL of the worker (for CDP endpoint)
+  // Linear API
+  LINEAR_API_KEY?: string; // Linear API key for issue management skill
+  // Multi-tenant client configuration
+  AGENT_MODE?: string; // 'omega' (default) or 'client'
+  CLIENT_NAME?: string; // Client slug (e.g., 'lowe-neuropsych') — required when AGENT_MODE='client'
+  // Mercury banking API
+  MERCURY_API_TOKEN?: string; // Read-only Mercury API token for account balances
 }
 
 /**

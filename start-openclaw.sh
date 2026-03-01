@@ -1,11 +1,12 @@
 #!/bin/bash
 # Startup script for OpenClaw in Cloudflare Sandbox
 # This script:
-# 1. Restores config/workspace/skills from R2 via rclone (if configured)
-# 2. Runs openclaw onboard --non-interactive to configure from env vars
-# 3. Patches config for features onboard doesn't cover (channels, gateway auth)
-# 4. Starts a background sync loop (rclone, watches for file changes)
-# 5. Starts the gateway
+# 1. Runs openclaw onboard --non-interactive to configure from env vars
+# 2. Patches config for features onboard doesn't cover (channels, gateway auth)
+# 3. Starts the gateway
+#
+# NOTE: R2 backup/restore is handled by the Worker via its R2 binding.
+# The Worker restores data before starting this script and backs up via the admin UI.
 
 set -e
 
@@ -18,85 +19,14 @@ CONFIG_DIR="/root/.openclaw"
 CONFIG_FILE="$CONFIG_DIR/openclaw.json"
 WORKSPACE_DIR="/root/clawd"
 SKILLS_DIR="/root/clawd/skills"
-RCLONE_CONF="/root/.config/rclone/rclone.conf"
 LAST_SYNC_FILE="/tmp/.last-sync"
 
 echo "Config directory: $CONFIG_DIR"
 
 mkdir -p "$CONFIG_DIR"
 
-# ============================================================
-# RCLONE SETUP
-# ============================================================
-
-r2_configured() {
-    [ -n "$R2_ACCESS_KEY_ID" ] && [ -n "$R2_SECRET_ACCESS_KEY" ] && [ -n "$CF_ACCOUNT_ID" ]
-}
-
-R2_BUCKET="${R2_BUCKET_NAME:-moltbot-data}"
-
-setup_rclone() {
-    mkdir -p "$(dirname "$RCLONE_CONF")"
-    cat > "$RCLONE_CONF" << EOF
-[r2]
-type = s3
-provider = Cloudflare
-access_key_id = $R2_ACCESS_KEY_ID
-secret_access_key = $R2_SECRET_ACCESS_KEY
-endpoint = https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com
-acl = private
-no_check_bucket = true
-EOF
-    touch /tmp/.rclone-configured
-    echo "Rclone configured for bucket: $R2_BUCKET"
-}
-
-RCLONE_FLAGS="--transfers=16 --fast-list --s3-no-check-bucket"
-
-# ============================================================
-# RESTORE FROM R2
-# ============================================================
-
-if r2_configured; then
-    setup_rclone
-
-    echo "Checking R2 for existing backup..."
-    # Check if R2 has an openclaw config backup
-    if rclone ls "r2:${R2_BUCKET}/openclaw/openclaw.json" $RCLONE_FLAGS 2>/dev/null | grep -q openclaw.json; then
-        echo "Restoring config from R2..."
-        rclone copy "r2:${R2_BUCKET}/openclaw/" "$CONFIG_DIR/" $RCLONE_FLAGS -v 2>&1 || echo "WARNING: config restore failed with exit code $?"
-        echo "Config restored"
-    elif rclone ls "r2:${R2_BUCKET}/clawdbot/clawdbot.json" $RCLONE_FLAGS 2>/dev/null | grep -q clawdbot.json; then
-        echo "Restoring from legacy R2 backup..."
-        rclone copy "r2:${R2_BUCKET}/clawdbot/" "$CONFIG_DIR/" $RCLONE_FLAGS -v 2>&1 || echo "WARNING: legacy config restore failed with exit code $?"
-        if [ -f "$CONFIG_DIR/clawdbot.json" ] && [ ! -f "$CONFIG_FILE" ]; then
-            mv "$CONFIG_DIR/clawdbot.json" "$CONFIG_FILE"
-        fi
-        echo "Legacy config restored and migrated"
-    else
-        echo "No backup found in R2, starting fresh"
-    fi
-
-    # Restore workspace
-    REMOTE_WS_COUNT=$(rclone ls "r2:${R2_BUCKET}/workspace/" $RCLONE_FLAGS 2>/dev/null | wc -l)
-    if [ "$REMOTE_WS_COUNT" -gt 0 ]; then
-        echo "Restoring workspace from R2 ($REMOTE_WS_COUNT files)..."
-        mkdir -p "$WORKSPACE_DIR"
-        rclone copy "r2:${R2_BUCKET}/workspace/" "$WORKSPACE_DIR/" $RCLONE_FLAGS -v 2>&1 || echo "WARNING: workspace restore failed with exit code $?"
-        echo "Workspace restored"
-    fi
-
-    # Restore skills
-    REMOTE_SK_COUNT=$(rclone ls "r2:${R2_BUCKET}/skills/" $RCLONE_FLAGS 2>/dev/null | wc -l)
-    if [ "$REMOTE_SK_COUNT" -gt 0 ]; then
-        echo "Restoring skills from R2 ($REMOTE_SK_COUNT files)..."
-        mkdir -p "$SKILLS_DIR"
-        rclone copy "r2:${R2_BUCKET}/skills/" "$SKILLS_DIR/" $RCLONE_FLAGS -v 2>&1 || echo "WARNING: skills restore failed with exit code $?"
-        echo "Skills restored"
-    fi
-else
-    echo "R2 not configured, starting fresh"
-fi
+# NOTE: R2 restore is now handled by the Worker (process.ts → restoreFromR2)
+# before this script is invoked. No rclone needed.
 
 # ============================================================
 # ONBOARD (only if no config exists yet)
@@ -167,6 +97,17 @@ if (process.env.OPENCLAW_GATEWAY_TOKEN) {
 if (process.env.OPENCLAW_DEV_MODE === 'true') {
     config.gateway.controlUi = config.gateway.controlUi || {};
     config.gateway.controlUi.allowInsecureAuth = true;
+}
+
+// When behind CF Access (token auth configured), disable device identity checks.
+// CF Access handles identity; device pairing is redundant for the Control UI.
+// Note: allowInsecureAuth only affects HTTP context, NOT device identity.
+// dangerouslyDisableDeviceAuth fully disables device key validation and pairing.
+// Channel auth (Telegram/Discord/Slack) is unaffected — they use dmPolicy separately.
+if (process.env.OPENCLAW_GATEWAY_TOKEN) {
+    config.gateway.controlUi = config.gateway.controlUi || {};
+    config.gateway.controlUi.allowInsecureAuth = true;
+    config.gateway.controlUi.dangerouslyDisableDeviceAuth = true;
 }
 
 // Legacy AI Gateway base URL override:
@@ -259,6 +200,13 @@ if (modelOverride) {
 // Model aliases for on-demand switching ("use sonnet", "use haiku", "use opus")
 config.agents = config.agents || {};
 config.agents.defaults = config.agents.defaults || {};
+
+// CRITICAL: Override workspace path to /root/clawd where SOUL.md, AGENTS.md,
+// skills, and agents are baked in via Dockerfile. OpenClaw defaults to
+// ~/.openclaw/workspace which is empty in a container.
+config.agents.defaults.workspace = '/root/clawd';
+console.log('Workspace: /root/clawd (overridden from default)');
+
 config.agents.defaults.models = config.agents.defaults.models || {};
 config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001'] =
     config.agents.defaults.models['anthropic/claude-haiku-4-5-20251001'] || { alias: 'haiku' };
@@ -276,6 +224,37 @@ config.agents.defaults.subagents = config.agents.defaults.subagents || {};
 config.agents.defaults.subagents.maxConcurrent = parseInt(process.env.SUBAGENT_MAX_CONCURRENT || '2', 10);
 config.agents.defaults.subagents.model = process.env.SUBAGENT_MODEL || 'cloudflare-ai-gateway/claude-haiku-4-5-20251001';
 console.log('Concurrency: maxConcurrent=' + config.agents.defaults.maxConcurrent + ' subagents.maxConcurrent=' + config.agents.defaults.subagents.maxConcurrent + ' subagent model=' + config.agents.defaults.subagents.model);
+
+// ============================================================
+// MULTI-AGENT: Omega as default orchestrator (Hardshell Phase 2C)
+// Architecture: agents.list[] defines agents, bindings[] routes
+// messages. This is forward-compatible with multi-tenant clients.
+// To add a client agent later, push to agents.list + bindings
+// and add their Telegram bot under channels.telegram.accounts.
+//
+// NOTE: agents.list and bindings are NOT YET supported by the
+// currently installed OpenClaw version. Kept as commented-out
+// reference for when the schema is extended.
+// ============================================================
+// FUTURE: Uncomment when OpenClaw supports multi-agent schema
+// config.agents.list = config.agents.list || [];
+// const omegaIdx = config.agents.list.findIndex(a => a.id === 'omega');
+// if (omegaIdx === -1) {
+//     config.agents.list.push({
+//         id: 'omega',
+//         workspace: '/root/clawd',
+//         default: true,
+//         sandbox: { mode: 'off' },
+//     });
+// }
+// config.bindings = config.bindings || [];
+// if (!config.bindings.some(b => b.agentId === 'omega')) {
+//     config.bindings.push({
+//         agentId: 'omega',
+//         match: { channel: 'telegram', accountId: 'default' },
+//     });
+// }
+console.log('Multi-agent: Omega workspace configured (skills + SOUL.md)');
 
 // ============================================================
 // CONFIG CLEANUP: Remove unsupported keys
@@ -304,37 +283,44 @@ if (config.agents && config.agents.defaults) {
 console.log('Config cleanup: stripped unsupported keys (heartbeat, cache, cacheRetention)');
 
 // Telegram configuration
-// Overwrite entire channel object to drop stale keys from old R2 backups
-// that would fail OpenClaw's strict config validation (see #47)
-if (process.env.TELEGRAM_BOT_TOKEN) {
+// Uses flat format compatible with current OpenClaw version.
+// HARDSHELL_TELEGRAM_BOT_TOKEN = Omega's dedicated bot (HardshellStagingBot)
+// TELEGRAM_BOT_TOKEN = fallback for single-agent / dev mode
+//
+// FUTURE (multi-agent): When OpenClaw supports channels.telegram.accounts,
+// switch to: config.channels.telegram = { accounts: { default: {...}, 'client-acme': {...} } }
+// and add bindings[] to route each account to its agent.
+const tgBotToken = process.env.HARDSHELL_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
+if (tgBotToken) {
     const dmPolicy = process.env.TELEGRAM_DM_POLICY || 'allowlist';
     const groupPolicy = process.env.TELEGRAM_GROUP_POLICY || 'disabled';
+
+    // Build DM allowlist
+    let allowFrom;
+    if (process.env.TELEGRAM_DM_ALLOW_FROM) {
+        allowFrom = process.env.TELEGRAM_DM_ALLOW_FROM.split(',');
+    } else if (dmPolicy === 'allowlist') {
+        allowFrom = ['8476535456']; // Default owner: Joshua's Telegram ID
+    } else if (dmPolicy === 'open') {
+        allowFrom = ['*'];
+    }
+
+    // Flat format (current OpenClaw)
     config.channels.telegram = {
-        botToken: process.env.TELEGRAM_BOT_TOKEN,
-        enabled: true,
+        botToken: tgBotToken,
         dmPolicy: dmPolicy,
-        groupPolicy: groupPolicy,
-        // Link preview: show URL previews in outbound messages (default: true)
         linkPreview: process.env.TELEGRAM_LINK_PREVIEW !== 'false',
-        // Media max size in MB (default 5 per docs, Telegram bot limit is 50)
         mediaMaxMb: parseInt(process.env.TELEGRAM_MEDIA_MAX_MB || '50', 10),
-        // History limit: max messages to keep in context (default 50)
         historyLimit: parseInt(process.env.TELEGRAM_HISTORY_LIMIT || '100', 10),
     };
-    // DM allowlist: numeric Telegram user IDs
-    if (process.env.TELEGRAM_DM_ALLOW_FROM) {
-        config.channels.telegram.allowFrom = process.env.TELEGRAM_DM_ALLOW_FROM.split(',');
-    } else if (dmPolicy === 'allowlist') {
-        // Default owner access — always allow Joshua's Telegram ID
-        config.channels.telegram.allowFrom = ['8476535456'];
-    } else if (dmPolicy === 'open') {
-        config.channels.telegram.allowFrom = ['*'];
+    if (allowFrom) config.channels.telegram.allowFrom = allowFrom;
+    if (groupPolicy && groupPolicy !== 'disabled') {
+        config.channels.telegram.groupPolicy = groupPolicy;
     }
-    // Group sender allowlist: numeric Telegram user IDs
     if (process.env.TELEGRAM_GROUP_ALLOW_FROM) {
         config.channels.telegram.groupAllowFrom = process.env.TELEGRAM_GROUP_ALLOW_FROM.split(',');
     }
-    console.log('Telegram config: dmPolicy=' + dmPolicy + ' allowFrom=' + JSON.stringify(config.channels.telegram.allowFrom));
+    console.log('Telegram config: dmPolicy=' + dmPolicy + ' allowFrom=' + JSON.stringify(allowFrom));
 }
 
 // Discord configuration
@@ -367,148 +353,158 @@ console.log('Token optimization: model routing + heartbeat + caching configured'
 EOFPATCH
 
 # ============================================================
-# TOKEN OPTIMIZATION: Workspace Templates (Parts 1, 4, 5)
-# Create default SOUL.md and USER.md with session init rules,
-# model selection rules, and rate limits if they don't exist.
+# WORKSPACE: Copy baked-in files to OpenClaw's default workspace
+# OpenClaw reads from ~/.openclaw/workspace/ by default.
+# Our files are baked into /root/clawd/ via Dockerfile.
+#
+# MULTI-TENANT: When AGENT_MODE=client and CLIENT_NAME is set,
+# overlay client workspace files on top of defaults.
 # ============================================================
-if [ ! -f "$WORKSPACE_DIR/SOUL.md" ]; then
-    echo "Creating default SOUL.md with token optimization rules..."
-    cat > "$WORKSPACE_DIR/SOUL.md" << 'EOFSOUL'
-# SOUL.md
+OC_WORKSPACE="/root/.openclaw/workspace"
+mkdir -p "$OC_WORKSPACE"
+mkdir -p "$OC_WORKSPACE/skills"
+mkdir -p "$OC_WORKSPACE/memory"
 
-## Core Principles
+# Copy ALL workspace .md files from baked-in dir to default workspace
+WORKSPACE_FILES_COPIED=0
+for md_file in "$WORKSPACE_DIR"/*.md; do
+    if [ -f "$md_file" ]; then
+        fname=$(basename "$md_file")
+        cp "$md_file" "$OC_WORKSPACE/$fname"
+        WORKSPACE_FILES_COPIED=$((WORKSPACE_FILES_COPIED + 1))
+    fi
+done
+echo "Workspace: copied $WORKSPACE_FILES_COPIED files to $OC_WORKSPACE"
 
-- Be helpful, accurate, and efficient
-- Minimize token usage without sacrificing quality
-- Use the right model for the right task
+# CLIENT MODE: Workspace files are already in /root/clawd/ — loaded from R2
+# by the Worker (loadClientWorkspace in process.ts) before this script runs.
+# No local overlay needed; the R2 files overwrite baked-in defaults.
 
-## SESSION INITIALIZATION RULE
+# Also ensure SOUL.md is in the workspace (may be at root level, not in workspace/)
+if [ -f "$WORKSPACE_DIR/SOUL.md" ]; then
+    cp "$WORKSPACE_DIR/SOUL.md" "$OC_WORKSPACE/SOUL.md"
+    echo "  SOUL.md: $(wc -l < $OC_WORKSPACE/SOUL.md) lines"
+elif [ -f "/root/clawd/SOUL.md" ] && [ ! -f "$OC_WORKSPACE/SOUL.md" ]; then
+    cp "/root/clawd/SOUL.md" "$OC_WORKSPACE/SOUL.md"
+    echo "  SOUL.md: copied from /root/clawd/ (fallback)"
+fi
 
-On every session start:
-1. Load ONLY these files:
-   - SOUL.md
-   - USER.md
-   - IDENTITY.md
-   - memory/YYYY-MM-DD.md (if it exists)
-
-2. DO NOT auto-load:
-   - MEMORY.md
-   - Session history
-   - Prior messages
-   - Previous tool outputs
-
-3. When user asks about prior context:
-   - Use memory_search() on demand
-   - Pull only the relevant snippet with memory_get()
-   - Don't load the whole file
-
-4. Update memory/YYYY-MM-DD.md at end of session with:
-   - What you worked on
-   - Decisions made
-   - Leads generated
-   - Blockers
-   - Next steps
-
-## MODEL SELECTION RULE
-
-Default: Always use Haiku
-Switch to Sonnet ONLY when:
-- Architecture decisions
-- Production code review
-- Security analysis
-- Complex debugging/reasoning
-- Strategic multi-project decisions
-
-When in doubt: Try Haiku first.
-
-## RATE LIMITS
-
-- 5 seconds minimum between API calls
-- 10 seconds between web searches
-- Max 5 searches per batch, then 2-minute break
-- Batch similar work (one request for 10 leads, not 10 requests)
-- If you hit 429 error: STOP, wait 5 minutes, retry
-
-DAILY BUDGET: $5 (warning at 75%)
-MONTHLY BUDGET: $200 (warning at 75%)
+if [ ! -f "$OC_WORKSPACE/SOUL.md" ]; then
+    echo "  SOUL.md: WARNING — not found! Creating minimal fallback"
+    cat > "$OC_WORKSPACE/SOUL.md" << 'EOFSOUL'
+# SOUL.md — Omega (Fallback)
+You are Omega, the master orchestrator for Stream Kinetics.
+Be helpful, accurate, and efficient. Minimize token usage.
 EOFSOUL
-    echo "SOUL.md created"
-fi
-
-if [ ! -f "$WORKSPACE_DIR/USER.md" ]; then
-    echo "Creating default USER.md template..."
-    cat > "$WORKSPACE_DIR/USER.md" << 'EOFUSER'
-# USER.md
-
-- **Name:** [YOUR NAME]
-- **Timezone:** [YOUR TIMEZONE]
-- **Mission:** [WHAT YOU'RE BUILDING]
-
-## Success Metrics
-
-- [METRIC 1]
-- [METRIC 2]
-- [METRIC 3]
-
-## Notes
-
-Customize this file with your information. Keep it lean —
-every line costs tokens on every request.
-EOFUSER
-    echo "USER.md created"
 fi
 
 # ============================================================
-# BACKGROUND SYNC LOOP
+# SKILLS: Symlink agent skills into BOTH workspace directories
+# Each agent directory with a SKILL.md becomes a loadable skill.
+# This is idempotent — existing symlinks are preserved.
+# For multi-tenant: client agents get their own workspace with
+# a subset of skills. Omega gets all 12.
 # ============================================================
-if r2_configured; then
-    echo "Starting background R2 sync loop..."
-    (
-        MARKER=/tmp/.last-sync-marker
-        LOGFILE=/tmp/r2-sync.log
-        touch "$MARKER"
-
-        while true; do
-            sleep 30
-
-            # ---- PULL: fetch new files FROM R2 (bidirectional sync) ----
-            # Uses 'copy' (not sync) so locally-created files aren't deleted
-            if [ -d "$WORKSPACE_DIR" ]; then
-                rclone copy "r2:${R2_BUCKET}/workspace/" "$WORKSPACE_DIR/" \
-                    $RCLONE_FLAGS --exclude='.git/**' --exclude='node_modules/**' 2>>"$LOGFILE"
+AGENTS_SRC="$WORKSPACE_DIR/agents"
+if [ -d "$AGENTS_SRC" ]; then
+    for agent_dir in "$AGENTS_SRC"/*/; do
+        skill_name=$(basename "$agent_dir")
+        if [ -f "$agent_dir/SKILL.md" ]; then
+            # Link into baked skills dir
+            if [ ! -e "$SKILLS_DIR/$skill_name" ]; then
+                ln -s "$agent_dir" "$SKILLS_DIR/$skill_name"
+                echo "Skill linked: $skill_name → $SKILLS_DIR/"
             fi
+            # Also link into default workspace skills dir
+            if [ ! -e "$OC_WORKSPACE/skills/$skill_name" ]; then
+                ln -s "$agent_dir" "$OC_WORKSPACE/skills/$skill_name"
+                echo "Skill linked: $skill_name → $OC_WORKSPACE/skills/"
+            fi
+        fi
+    done
+    echo "Skills: $(ls -1 $SKILLS_DIR | wc -l) skills available"
+else
+    echo "Skills: no agents directory found at $AGENTS_SRC"
+fi
 
-            # ---- PUSH: detect local changes and upload to R2 ----
-            CHANGED=/tmp/.changed-files
-            {
-                find "$CONFIG_DIR" -newer "$MARKER" -type f -printf '%P\n' 2>/dev/null
-                find "$WORKSPACE_DIR" -newer "$MARKER" \
-                    -not -path '*/node_modules/*' \
-                    -not -path '*/.git/*' \
-                    -type f -printf '%P\n' 2>/dev/null
-            } > "$CHANGED"
+# NOTE: Background R2 sync is now handled by the Worker via its R2 binding.
+# Use the admin UI "Backup Now" button to trigger manual backups.
 
-            COUNT=$(wc -l < "$CHANGED" 2>/dev/null || echo 0)
 
-            if [ "$COUNT" -gt 0 ]; then
-                echo "[sync] Uploading changes ($COUNT files) at $(date)" >> "$LOGFILE"
-                rclone sync "$CONFIG_DIR/" "r2:${R2_BUCKET}/openclaw/" \
-                    $RCLONE_FLAGS --exclude='*.lock' --exclude='*.log' --exclude='*.tmp' --exclude='.git/**' 2>> "$LOGFILE"
-                if [ -d "$WORKSPACE_DIR" ]; then
-                    rclone sync "$WORKSPACE_DIR/" "r2:${R2_BUCKET}/workspace/" \
-                        $RCLONE_FLAGS --exclude='skills/**' --exclude='.git/**' --exclude='node_modules/**' 2>> "$LOGFILE"
-                fi
-                if [ -d "$SKILLS_DIR" ]; then
-                    rclone sync "$SKILLS_DIR/" "r2:${R2_BUCKET}/skills/" \
-                        $RCLONE_FLAGS 2>> "$LOGFILE"
-                fi
-                date -Iseconds > "$LAST_SYNC_FILE"
-                touch "$MARKER"
-                echo "[sync] Complete at $(date)" >> "$LOGFILE"
+
+# ============================================================
+# AGENT SETUP: Create named agent based on AGENT_MODE
+#   AGENT_MODE=omega (default) → Create Omega orchestrator
+#   AGENT_MODE=client          → Create client-specific agent
+# ============================================================
+if [ "$AGENT_MODE" = "client" ] && [ -n "$CLIENT_NAME" ]; then
+    # CLIENT MODE: Create agent with client name
+    AGENT_ID="client-$CLIENT_NAME"
+    echo "Setting up client agent: $AGENT_ID"
+    echo "" | openclaw agents add "$AGENT_ID" 2>&1 || true
+
+    # Find agent workspace (location varies by OpenClaw version)
+    AGENT_DIR="$HOME/.openclaw/workspace-$AGENT_ID"
+    if [ ! -d "$AGENT_DIR" ]; then
+        AGENT_DIR="$HOME/.openclaw/agents/$AGENT_ID"
+    fi
+    if [ -d "$AGENT_DIR" ]; then
+        # Copy workspace files (already loaded from R2 into /root/clawd/) into agent workspace
+        for md_file in "$WORKSPACE_DIR"/*.md; do
+            if [ -f "$md_file" ]; then
+                cp "$md_file" "$AGENT_DIR/$(basename "$md_file")"
             fi
         done
-    ) &
-    echo "Background sync loop started (PID: $!)"
+        echo "Client agent: workspace populated ($(ls -1 $AGENT_DIR/*.md 2>/dev/null | wc -l) files)"
+
+        # Link only client-relevant skills (CFO agent + any client-specific)
+        mkdir -p "$AGENT_DIR/skills"
+        if [ -d "$WORKSPACE_DIR/agents/cfo-agent" ]; then
+            if [ ! -e "$AGENT_DIR/skills/cfo-agent" ]; then
+                ln -s "$WORKSPACE_DIR/agents/cfo-agent" "$AGENT_DIR/skills/cfo-agent"
+                echo "Skill linked: cfo-agent"
+            fi
+        fi
+        mkdir -p "$AGENT_DIR/memory"
+        echo "Client agent: ready (skills: $(ls -1 $AGENT_DIR/skills/ 2>/dev/null | wc -l))"
+    else
+        echo "Client agent: WARNING — agent dir not found at $AGENT_DIR"
+    fi
+else
+    # OMEGA MODE: Original behavior
+    echo "Setting up Omega agent..."
+    echo "" | openclaw agents add omega 2>&1 || true
+
+    OMEGA_AGENT_DIR="$HOME/.openclaw/workspace-omega"
+    if [ ! -d "$OMEGA_AGENT_DIR" ]; then
+        OMEGA_AGENT_DIR="$HOME/.openclaw/agents/omega"
+    fi
+    if [ -d "$OMEGA_AGENT_DIR" ]; then
+        for md_file in "$WORKSPACE_DIR"/*.md; do
+            if [ -f "$md_file" ]; then
+                cp "$md_file" "$OMEGA_AGENT_DIR/$(basename "$md_file")"
+            fi
+        done
+        if [ -f "/root/clawd/SOUL.md" ]; then
+            cp "/root/clawd/SOUL.md" "$OMEGA_AGENT_DIR/SOUL.md"
+        fi
+        echo "Omega agent: workspace populated ($(ls -1 $OMEGA_AGENT_DIR/*.md 2>/dev/null | wc -l) files)"
+
+        mkdir -p "$OMEGA_AGENT_DIR/skills"
+        if [ -d "$WORKSPACE_DIR/agents" ]; then
+            for agent_dir in "$WORKSPACE_DIR"/agents/*/; do
+                skill_name=$(basename "$agent_dir")
+                if [ -f "$agent_dir/SKILL.md" ] && [ ! -e "$OMEGA_AGENT_DIR/skills/$skill_name" ]; then
+                    ln -s "$agent_dir" "$OMEGA_AGENT_DIR/skills/$skill_name"
+                fi
+            done
+            echo "Omega agent: $(ls -1 $OMEGA_AGENT_DIR/skills/ 2>/dev/null | wc -l) skills linked"
+        fi
+        mkdir -p "$OMEGA_AGENT_DIR/memory"
+    else
+        echo "Omega agent: WARNING — agent dir not found at $OMEGA_AGENT_DIR"
+        echo "  The 'openclaw agents add omega' command may not have created it."
+    fi
 fi
 
 # ============================================================

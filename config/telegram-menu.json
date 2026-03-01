@@ -1,0 +1,551 @@
+{
+  "version": "1.0",
+  "description": "Telegram Bot command menu and inline keyboard definitions for Hardshell agent navigation.",
+  "bot_commands": [
+    {
+      "command": "finance",
+      "description": "💰 Financial team dashboard"
+    },
+    {
+      "command": "legal",
+      "description": "⚖️ Legal team dashboard"
+    },
+    {
+      "command": "security",
+      "description": "🛡️ Security team dashboard"
+    },
+    {
+      "command": "ops",
+      "description": "🔧 Operations team dashboard"
+    },
+    {
+      "command": "growth",
+      "description": "🚀 Growth & marketing dashboard"
+    },
+    {
+      "command": "product",
+      "description": "📦 Product team dashboard"
+    },
+    {
+      "command": "strategy",
+      "description": "🎯 Strategy & competitive intel"
+    },
+    {
+      "command": "social",
+      "description": "📱 Social media & content distribution"
+    },
+    {
+      "command": "clients",
+      "description": "👤 Client dashboard & health"
+    },
+    {
+      "command": "tax",
+      "description": "🧮 Quick: quarterly tax estimate"
+    },
+    {
+      "command": "cash",
+      "description": "💵 Quick: cash position brief"
+    },
+    {
+      "command": "hipaa",
+      "description": "🏥 Quick: HIPAA compliance status"
+    },
+    {
+      "command": "contract",
+      "description": "📜 Quick: contract review triage"
+    },
+    {
+      "command": "agents",
+      "description": "🤖 Agent team health & audit"
+    },
+    {
+      "command": "team",
+      "description": "👥 Full agent team overview"
+    },
+    {
+      "command": "compliance",
+      "description": "📋 Compliance calendar (all teams)"
+    },
+    {
+      "command": "logs",
+      "description": "📊 Recent activity & system logs"
+    },
+    {
+      "command": "help",
+      "description": "❓ Available commands and navigation"
+    }
+  ],
+  "inline_keyboards": {
+    "finance_menu": {
+      "text": "🏦 **Financial Team**\nSelect an action:",
+      "buttons": [
+        [
+          {
+            "text": "💵 Cash Brief",
+            "callback_data": "agent:treasury:cash_brief"
+          },
+          {
+            "text": "📊 Monthly P&L",
+            "callback_data": "agent:controller:monthly_close"
+          }
+        ],
+        [
+          {
+            "text": "🧮 Tax Estimate",
+            "callback_data": "agent:tax-strategist:quarterly_estimate"
+          },
+          {
+            "text": "📈 Portfolio",
+            "callback_data": "agent:quant:portfolio_analysis"
+          }
+        ],
+        [
+          {
+            "text": "🔍 Burn Rate",
+            "callback_data": "agent:financial-analyst:burn_rate"
+          },
+          {
+            "text": "📋 Investor Update",
+            "callback_data": "agent:investor-relations:monthly_update"
+          }
+        ],
+        [
+          {
+            "text": "💰 Full CFO Brief",
+            "callback_data": "agent:cfo:full_brief"
+          }
+        ]
+      ]
+    },
+    "legal_menu": {
+      "text": "⚖️ **Legal Team**\nSelect an action:",
+      "buttons": [
+        [
+          {
+            "text": "📜 Contract Review",
+            "callback_data": "agent:corporate-contracts:review_triage"
+          },
+          {
+            "text": "🏥 HIPAA Check",
+            "callback_data": "agent:healthcare-compliance:hipaa_status"
+          }
+        ],
+        [
+          {
+            "text": "📋 Compliance Calendar",
+            "callback_data": "agent:regulatory-compliance:calendar"
+          },
+          {
+            "text": "🔍 Trademark Search",
+            "callback_data": "agent:ip-privacy:trademark_search"
+          }
+        ],
+        [
+          {
+            "text": "⚠️ Risk Dashboard",
+            "callback_data": "agent:litigation-disputes:risk_dashboard"
+          },
+          {
+            "text": "🏢 Entity Status",
+            "callback_data": "agent:corporate-contracts:entity_status"
+          }
+        ],
+        [
+          {
+            "text": "⚖️ Full Legal Brief",
+            "callback_data": "agent:general-counsel:full_brief"
+          }
+        ]
+      ]
+    },
+    "security_menu": {
+      "text": "🛡️ **Security Team**\nSelect an action:",
+      "buttons": [
+        [
+          {
+            "text": "🔐 Token Health",
+            "callback_data": "agent:zero-trust:token_sweep"
+          },
+          {
+            "text": "🏗️ Infra Audit",
+            "callback_data": "agent:cloudflare-security:full_audit"
+          }
+        ],
+        [
+          {
+            "text": "🌐 Network Security",
+            "callback_data": "agent:network-security:control_report"
+          },
+          {
+            "text": "📋 Policy Review",
+            "callback_data": "agent:policy-compliance:policy_status"
+          }
+        ],
+        [
+          {
+            "text": "🚨 Incident Status",
+            "callback_data": "agent:incident-response:active_incidents"
+          },
+          {
+            "text": "📊 SOC 2 Status",
+            "callback_data": "agent:policy-compliance:soc2_readiness"
+          }
+        ],
+        [
+          {
+            "text": "🛡️ Full Security Posture",
+            "callback_data": "agent:ciso:security_posture"
+          }
+        ]
+      ]
+    },
+    "ops_menu": {
+      "text": "🔧 **Operations Team**\nSelect an action:",
+      "buttons": [
+        [
+          {
+            "text": "📊 Platform Health",
+            "callback_data": "agent:sre:health_check"
+          },
+          {
+            "text": "🚀 Build Status",
+            "callback_data": "agent:devops:build_status"
+          }
+        ],
+        [
+          {
+            "text": "🏗️ Resource Inventory",
+            "callback_data": "agent:infrastructure:inventory"
+          },
+          {
+            "text": "📋 Runbooks",
+            "callback_data": "agent:runbook:list"
+          }
+        ],
+        [
+          {
+            "text": "📈 SLO Dashboard",
+            "callback_data": "agent:sre:slo_dashboard"
+          },
+          {
+            "text": "💸 Cost Report",
+            "callback_data": "agent:coo:cost_report"
+          }
+        ],
+        [
+          {
+            "text": "🔧 Full Ops Report",
+            "callback_data": "agent:coo:full_report"
+          },
+          {
+            "text": "📊 Activity Logs",
+            "callback_data": "menu:logs_action"
+          }
+        ]
+      ]
+    },
+    "growth_menu": {
+      "text": "🚀 **Growth & Marketing Team**\nSelect an action:",
+      "buttons": [
+        [
+          {
+            "text": "📈 Pipeline",
+            "callback_data": "agent:sales:pipeline_status"
+          },
+          {
+            "text": "📝 Content Calendar",
+            "callback_data": "agent:content-marketing:calendar"
+          }
+        ],
+        [
+          {
+            "text": "💚 Client Health",
+            "callback_data": "agent:customer-success:health_dashboard"
+          },
+          {
+            "text": "🤝 Partnerships",
+            "callback_data": "agent:partnerships:active"
+          }
+        ],
+        [
+          {
+            "text": "📊 Campaign Stats",
+            "callback_data": "agent:marketing-analyst:campaign_report"
+          },
+          {
+            "text": "💬 Support Insights",
+            "callback_data": "agent:customer-support:insights"
+          }
+        ],
+        [
+          {
+            "text": "🚀 Full Growth Report",
+            "callback_data": "agent:growth-strategist:full_report"
+          }
+        ]
+      ]
+    },
+    "product_menu": {
+      "text": "📦 **Product Team**\nSelect an action:",
+      "buttons": [
+        [
+          {
+            "text": "🗺️ Roadmap",
+            "callback_data": "agent:cpo:roadmap"
+          },
+          {
+            "text": "📋 Sprint Status",
+            "callback_data": "agent:product-manager:sprint_status"
+          }
+        ],
+        [
+          {
+            "text": "🔬 UX Findings",
+            "callback_data": "agent:ux-researcher:findings"
+          },
+          {
+            "text": "📊 Product Analytics",
+            "callback_data": "agent:data-analyst:dashboard"
+          }
+        ],
+        [
+          {
+            "text": "✅ Quality Gate",
+            "callback_data": "agent:qa:release_readiness"
+          },
+          {
+            "text": "🐛 Bug Triage",
+            "callback_data": "agent:qa:bug_triage"
+          }
+        ],
+        [
+          {
+            "text": "📦 Full Product Brief",
+            "callback_data": "agent:cpo:full_brief"
+          }
+        ]
+      ]
+    },
+    "strategy_menu": {
+      "text": "🎯 **Strategy & Intelligence**\nSelect an action:",
+      "buttons": [
+        [
+          {
+            "text": "🎯 Strategy Brief",
+            "callback_data": "agent:strategy:strategy_brief"
+          },
+          {
+            "text": "🔍 Competitive Intel",
+            "callback_data": "agent:competitive-intel:market_radar"
+          }
+        ],
+        [
+          {
+            "text": "📊 Market Position",
+            "callback_data": "agent:competitive-intel:positioning"
+          },
+          {
+            "text": "📈 Growth Trajectory",
+            "callback_data": "agent:strategy:growth_model"
+          }
+        ],
+        [
+          {
+            "text": "🎯 Full Strategy Report",
+            "callback_data": "agent:strategy:full_report"
+          }
+        ]
+      ]
+    },
+    "social_menu": {
+      "text": "📱 **Social Media & Content**\nSelect an action:",
+      "buttons": [
+        [
+          {
+            "text": "📊 Social Dashboard",
+            "callback_data": "agent:social-media:dashboard"
+          },
+          {
+            "text": "📅 Content Calendar",
+            "callback_data": "agent:content-marketing:calendar"
+          }
+        ],
+        [
+          {
+            "text": "🎬 Distribution Pipeline",
+            "callback_data": "agent:content-distribution:pipeline_status"
+          },
+          {
+            "text": "🔥 Viral Clips",
+            "callback_data": "agent:content-distribution:top_clips"
+          }
+        ],
+        [
+          {
+            "text": "📈 Platform Analytics",
+            "callback_data": "agent:social-media:analytics"
+          },
+          {
+            "text": "🎥 Video Library",
+            "callback_data": "agent:content-distribution:video_library"
+          }
+        ],
+        [
+          {
+            "text": "📱 Full Social Report",
+            "callback_data": "agent:social-media:full_report"
+          }
+        ]
+      ]
+    },
+    "clients_menu": {
+      "text": "👤 **Client Management**\nSelect an action:",
+      "buttons": [
+        [
+          {
+            "text": "📊 Client Dashboard",
+            "callback_data": "agent:client-management:dashboard"
+          },
+          {
+            "text": "💚 Health Scores",
+            "callback_data": "agent:client-management:health_scores"
+          }
+        ],
+        [
+          {
+            "text": "📋 Active Projects",
+            "callback_data": "agent:client-management:active_projects"
+          },
+          {
+            "text": "💰 Revenue by Client",
+            "callback_data": "agent:client-management:revenue"
+          }
+        ],
+        [
+          {
+            "text": "👤 Full Client Report",
+            "callback_data": "agent:client-management:full_report"
+          }
+        ]
+      ]
+    },
+    "team_menu": {
+      "text": "👥 **Agent Team Overview**\n57 agents across 8 teams + strategy:",
+      "buttons": [
+        [
+          {
+            "text": "🏦 Financial (7)",
+            "callback_data": "menu:finance"
+          },
+          {
+            "text": "⚖️ Legal (6)",
+            "callback_data": "menu:legal"
+          }
+        ],
+        [
+          {
+            "text": "🛡️ Security (6)",
+            "callback_data": "menu:security"
+          },
+          {
+            "text": "🔧 Operations (5)",
+            "callback_data": "menu:ops"
+          }
+        ],
+        [
+          {
+            "text": "🚀 Growth (7)",
+            "callback_data": "menu:growth"
+          },
+          {
+            "text": "📦 Product (5)",
+            "callback_data": "menu:product"
+          }
+        ],
+        [
+          {
+            "text": "🎯 Strategy",
+            "callback_data": "menu:strategy"
+          },
+          {
+            "text": "📱 Social",
+            "callback_data": "menu:social"
+          },
+          {
+            "text": "👤 Clients",
+            "callback_data": "menu:clients"
+          }
+        ],
+        [
+          {
+            "text": "🧑‍💼 Talent (5)",
+            "callback_data": "agent:chair:team_audit"
+          },
+          {
+            "text": "⚙️ Platform (13)",
+            "callback_data": "dashboard:platform"
+          }
+        ],
+        [
+          {
+            "text": "📊 Cost Dashboard",
+            "callback_data": "dashboard:costs"
+          }
+        ]
+      ]
+    },
+    "help_menu": {
+      "text": "❓ **Available Commands**\n\n**Quick Actions:**\n/tax — Quarterly tax estimate\n/cash — Cash position brief\n/hipaa — HIPAA compliance status\n/contract — Contract review\n\n**Team Dashboards:**\n/finance — Financial team\n/legal — Legal team\n/security — Security team\n/ops — Operations team\n/growth — Growth & marketing\n/product — Product team\n/agents — Agent health audit\n\n**Overview:**\n/team — All 8 teams\n/compliance — Compliance calendar\n\nOr just type a question — Omega will route it to the right agent.",
+      "buttons": [
+        [
+          {
+            "text": "🏦 Finance",
+            "callback_data": "menu:finance"
+          },
+          {
+            "text": "⚖️ Legal",
+            "callback_data": "menu:legal"
+          },
+          {
+            "text": "🛡️ Security",
+            "callback_data": "menu:security"
+          }
+        ],
+        [
+          {
+            "text": "🔧 Ops",
+            "callback_data": "menu:ops"
+          },
+          {
+            "text": "🚀 Growth",
+            "callback_data": "menu:growth"
+          },
+          {
+            "text": "📦 Product",
+            "callback_data": "menu:product"
+          }
+        ],
+        [
+          {
+            "text": "👥 All Teams",
+            "callback_data": "menu:team"
+          }
+        ]
+      ]
+    }
+  },
+  "callback_routing": {
+    "agent:{agent}:{action}": "Route to specified agent with action context",
+    "menu:{menu_name}": "Show the specified inline keyboard menu",
+    "dashboard:{dashboard}": "Generate and show the specified dashboard"
+  },
+  "botfather_registration": {
+    "note": "Run these commands in @BotFather to register the command menu:",
+    "steps": [
+      "1. Open @BotFather in Telegram",
+      "2. Send /setcommands",
+      "3. Select your bot",
+      "4. Paste the commands from bot_commands array above (one per line: command - description)"
+    ]
+  }
+}

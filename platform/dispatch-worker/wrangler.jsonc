@@ -1,0 +1,32 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "hardshell-prod-dispatch",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-05-06",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "observability": {
+    "enabled": true
+  },
+  // Dispatch namespace binding — routes to user workers
+  "dispatch_namespaces": [
+    {
+      "binding": "DISPATCHER",
+      "namespace": "hardshell-prod",
+      "outbound": {
+        "service": "hardshell-prod-outbound",
+        "parameters": [
+          "client_context"
+        ]
+      }
+    }
+  ],
+  // KV routing table: bot-token → user-worker mapping
+  "kv_namespaces": [
+    {
+      "binding": "ROUTING_TABLE",
+      "id": "c9fdbc461b5e409ebc9647618445025b"
+    }
+  ]
+}

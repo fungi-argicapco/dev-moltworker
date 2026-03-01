@@ -39,8 +39,11 @@ export function buildEnvVars(env: MoltbotEnv): Record<string, string> {
   // Map MOLTBOT_GATEWAY_TOKEN to OPENCLAW_GATEWAY_TOKEN (container expects this name)
   if (env.MOLTBOT_GATEWAY_TOKEN) envVars.OPENCLAW_GATEWAY_TOKEN = env.MOLTBOT_GATEWAY_TOKEN;
   if (env.DEV_MODE) envVars.OPENCLAW_DEV_MODE = env.DEV_MODE;
+  if (env.HARDSHELL_TELEGRAM_BOT_TOKEN) envVars.HARDSHELL_TELEGRAM_BOT_TOKEN = env.HARDSHELL_TELEGRAM_BOT_TOKEN;
   if (env.TELEGRAM_BOT_TOKEN) envVars.TELEGRAM_BOT_TOKEN = env.TELEGRAM_BOT_TOKEN;
   if (env.TELEGRAM_DM_POLICY) envVars.TELEGRAM_DM_POLICY = env.TELEGRAM_DM_POLICY;
+  if (env.TELEGRAM_DM_ALLOW_FROM) envVars.TELEGRAM_DM_ALLOW_FROM = env.TELEGRAM_DM_ALLOW_FROM;
+  if (env.TELEGRAM_GROUP_POLICY) envVars.TELEGRAM_GROUP_POLICY = env.TELEGRAM_GROUP_POLICY;
   if (env.DISCORD_BOT_TOKEN) envVars.DISCORD_BOT_TOKEN = env.DISCORD_BOT_TOKEN;
   if (env.DISCORD_DM_POLICY) envVars.DISCORD_DM_POLICY = env.DISCORD_DM_POLICY;
   if (env.SLACK_BOT_TOKEN) envVars.SLACK_BOT_TOKEN = env.SLACK_BOT_TOKEN;
@@ -49,11 +52,11 @@ export function buildEnvVars(env: MoltbotEnv): Record<string, string> {
   if (env.CF_ACCOUNT_ID) envVars.CF_ACCOUNT_ID = env.CF_ACCOUNT_ID;
   if (env.CDP_SECRET) envVars.CDP_SECRET = env.CDP_SECRET;
   if (env.WORKER_URL) envVars.WORKER_URL = env.WORKER_URL;
+  if (env.LINEAR_API_KEY) envVars.LINEAR_API_KEY = env.LINEAR_API_KEY;
 
-  // R2 persistence credentials (used by rclone in start-openclaw.sh)
-  if (env.R2_ACCESS_KEY_ID) envVars.R2_ACCESS_KEY_ID = env.R2_ACCESS_KEY_ID;
-  if (env.R2_SECRET_ACCESS_KEY) envVars.R2_SECRET_ACCESS_KEY = env.R2_SECRET_ACCESS_KEY;
-  if (env.R2_BUCKET_NAME) envVars.R2_BUCKET_NAME = env.R2_BUCKET_NAME;
+  // Multi-tenant client configuration
+  if (env.AGENT_MODE) envVars.AGENT_MODE = env.AGENT_MODE;
+  if (env.CLIENT_NAME) envVars.CLIENT_NAME = env.CLIENT_NAME;
 
   return envVars;
 }

@@ -2,7 +2,7 @@ import type { Sandbox, Process } from '@cloudflare/sandbox';
 import type { MoltbotEnv } from '../types';
 import { MOLTBOT_PORT, STARTUP_TIMEOUT_MS } from '../config';
 import { buildEnvVars } from './env';
-import { ensureRcloneConfig } from './r2';
+import { restoreFromR2, loadClientWorkspace } from './sync';
 
 /**
  * Find an existing OpenClaw gateway process
@@ -45,7 +45,7 @@ export async function findExistingMoltbotProcess(sandbox: Sandbox): Promise<Proc
  * Ensure the OpenClaw gateway is running
  *
  * This will:
- * 1. Mount R2 storage if configured
+ * 1. Restore persisted data from R2 via Worker binding (if available)
  * 2. Check for an existing gateway process
  * 3. Wait for it to be ready, or start a new one
  *
@@ -54,9 +54,20 @@ export async function findExistingMoltbotProcess(sandbox: Sandbox): Promise<Proc
  * @returns The running gateway process
  */
 export async function ensureMoltbotGateway(sandbox: Sandbox, env: MoltbotEnv): Promise<Process> {
-  // Configure rclone for R2 persistence (non-blocking if not configured).
-  // The startup script uses rclone to restore data from R2 on boot.
-  await ensureRcloneConfig(sandbox, env);
+  // Restore persisted config/workspace/skills from R2 via Worker binding.
+  // No S3 credentials needed — uses the MOLTBOT_BUCKET R2 binding directly.
+  const restoreResult = await restoreFromR2(sandbox, env.MOLTBOT_BUCKET);
+  console.log('[Gateway] R2 restore:', restoreResult.details || restoreResult.error || 'done');
+
+  // In client mode, load workspace files from the client's R2 bucket
+  // This overwrites baked-in defaults with client-specific files (SOUL.md, USER.md, etc.)
+  if (env.AGENT_MODE === 'client' && env.CLIENT_NAME) {
+    const clientResult = await loadClientWorkspace(sandbox, env.MOLTBOT_BUCKET, env.CLIENT_NAME);
+    console.log('[Gateway] Client workspace:', clientResult.details || clientResult.error || 'done');
+    if (!clientResult.success) {
+      console.error('[Gateway] WARNING: Client workspace load failed, agent may use default persona');
+    }
+  }
 
   // Check if gateway is already running or starting
   const existingProcess = await findExistingMoltbotProcess(sandbox);

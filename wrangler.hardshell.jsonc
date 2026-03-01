@@ -1,0 +1,120 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	// STD-RES-001: {project}-{env}-{purpose}
+	"name": "hardshell-stg-gateway",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-05-06",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"observability": {
+		"enabled": true,
+	},
+	// Static assets for admin UI (built by vite)
+	"assets": {
+		"directory": "./dist/client",
+		"not_found_handling": "single-page-application",
+		"html_handling": "auto-trailing-slash",
+		"binding": "ASSETS",
+		"run_worker_first": true,
+	},
+	// Allow importing HTML files as text modules and PNG files as binary
+	"rules": [
+		{
+			"type": "Text",
+			"globs": [
+				"**/*.html"
+			],
+			"fallthrough": false,
+		},
+		{
+			"type": "Data",
+			"globs": [
+				"**/*.png"
+			],
+			"fallthrough": false,
+		},
+	],
+	// Build command for vite
+	"build": {
+		"command": "bun run build",
+	},
+	// Container configuration for the Moltbot sandbox
+	"containers": [
+		{
+			"class_name": "Sandbox",
+			"image": "./Dockerfile",
+			"instance_type": "standard-2",
+			"max_instances": 1,
+		},
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"class_name": "Sandbox",
+				"name": "Sandbox",
+			},
+		],
+	},
+	"migrations": [
+		{
+			"new_sqlite_classes": [
+				"Sandbox"
+			],
+			"tag": "v1",
+		},
+	],
+	// R2 bucket — STD-RES-001: hardshell-stg-data (NOT moltbot-data)
+	"r2_buckets": [
+		{
+			"binding": "MOLTBOT_BUCKET",
+			"bucket_name": "hardshell-stg-data",
+			"preview_bucket_name": "hardshell-stg-data",
+		},
+	],
+	// Browser Rendering binding for CDP shim
+	"browser": {
+		"binding": "BROWSER",
+	},
+	// Workers AI binding — routes through AI Gateway for logging/analytics
+	"ai": {
+		"binding": "AI",
+	},
+	"kv_namespaces": [
+		{
+			"binding": "OMEGA_PROFILES",
+			"id": "8b9efc73829d468e91b80d1322808ae0"
+		}
+	],
+	// Daily backup of Omega user profiles to R2 (6 AM UTC = 10 PM PST)
+	"triggers": {
+		"crons": [
+			"0 6 * * *"
+		]
+	},
+	// ============================================================
+	// SECRETS — set via: wrangler secret put <KEY> -c wrangler.hardshell.jsonc
+	// ============================================================
+	//
+	// AI Provider (via AI Gateway Unified Billing):
+	//   - CLOUDFLARE_AI_GATEWAY_API_KEY: API key for hardshell-stg-aigw
+	//   - CF_AI_GATEWAY_ACCOUNT_ID: Cloudflare account ID
+	//   - CF_AI_GATEWAY_GATEWAY_ID: "hardshell-stg-aigw"
+	//
+	// Authentication:
+	//   - MOLTBOT_GATEWAY_TOKEN: Token to protect gateway access
+	//   - CF_ACCESS_TEAM_DOMAIN: Cloudflare Access team domain
+	//   - CF_ACCESS_AUD: Cloudflare Access application audience
+	//
+	// Chat channels:
+	//   - TELEGRAM_BOT_TOKEN: ⚠️ MUST be a DIFFERENT bot than dev-moltworker
+	//
+	// Browser automation (optional):
+	//   - CDP_SECRET: Shared secret for /cdp endpoint authentication
+	//   - WORKER_URL: Public URL of this staging worker
+	//
+	// R2 persistent storage:
+	//   - R2_ACCESS_KEY_ID: R2 access key ID
+	//   - R2_SECRET_ACCESS_KEY: R2 secret access key
+	//   - CF_ACCOUNT_ID: Your Cloudflare account ID
+}

@@ -1,0 +1,26 @@
+name = "zero-trust-agent"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+account_id = "a9c661749d16228083b6047aa1e8a70e"
+
+[vars]
+CF_ACCOUNT_ID = "a9c661749d16228083b6047aa1e8a70e"
+
+# Secrets (set via wrangler secret put):
+#   ENCRYPTION_KEY
+#   CF_WORKERS_TOKEN
+#   CF_D1_TOKEN
+#   CF_STREAM_TOKEN
+#   CF_R2_TOKEN
+#   CF_PAGES_TOKEN
+#   CF_FIREWALL_TOKEN
+#   INTERNAL_SECRET
+
+[[d1_databases]]
+binding = "DB"
+database_name = "crm-db"
+database_id = "65d74e27-7164-4b0d-b4ac-ca0a95295a91"
+
+[triggers]
+crons = ["0 */6 * * *"]

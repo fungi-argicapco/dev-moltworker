@@ -1,0 +1,31 @@
+{
+  "name": "zero-trust-agent",
+  "version": "1.0.0",
+  "description": "Zero Trust API token validation agent for Stream Kinetics Cloudflare infrastructure",
+  "main": "src/interceptor.js",
+  "scripts": {
+    "validate": "node src/interceptor.js manual",
+    "validate:scheduled": "node src/interceptor.js scheduled",
+    "validate:startup": "node src/interceptor.js startup",
+    "test": "node tests/phase1.test.js",
+    "migrate": "node scripts/migrate.js",
+    "store-token": "node scripts/store-token.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "zero-trust",
+    "cloudflare",
+    "token-validation",
+    "security",
+    "stream-kinetics"
+  ],
+  "author": "Stream Kinetics",
+  "license": "UNLICENSED",
+  "private": true
+}

@@ -5,7 +5,9 @@
   "private": true,
   "description": "Run Moltbot personal AI assistant in a Cloudflare Sandbox",
   "scripts": {
-    "build": "vite build",
+    "prebuild": "bun run scripts/generate-agent-registry.ts",
+    "generate:registry": "bun run scripts/generate-agent-registry.ts",
+    "build": "bun run prebuild && vite build",
     "deploy": "bun run build && wrangler deploy",
     "dev": "vite dev",
     "start": "wrangler dev",

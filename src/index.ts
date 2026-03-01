@@ -27,7 +27,7 @@ import type { AppEnv, MoltbotEnv } from './types';
 import { MOLTBOT_PORT } from './config';
 import { createAccessMiddleware } from './auth';
 import { ensureMoltbotGateway, findExistingMoltbotProcess } from './gateway';
-import { publicRoutes, api, adminUi, debug, cdp } from './routes';
+import { publicRoutes, api, adminUi, debug, cdp, telegram, omegaAdmin } from './routes';
 import { redactSensitiveParams } from './utils/logging';
 import loadingPageHtml from './assets/loading.html';
 import configErrorHtml from './assets/config-error.html';
@@ -132,8 +132,14 @@ app.use('*', async (c, next) => {
   await next();
 });
 
-// Middleware: Initialize sandbox for all requests
+// Middleware: Initialize sandbox for all requests (except Telegram webhooks)
 app.use('*', async (c, next) => {
+  const url = new URL(c.req.url);
+  // Telegram webhooks don't need the sandbox/container — skip to avoid
+  // Durable Object init failures blocking the webhook handler
+  if (url.pathname.startsWith('/api/telegram')) {
+    return next();
+  }
   const options = buildSandboxOptions(c.env);
   const sandbox = getSandbox(c.env.Sandbox, 'moltbot', options);
   c.set('sandbox', sandbox);
@@ -151,6 +157,10 @@ app.route('/', publicRoutes);
 // Mount CDP routes (uses shared secret auth via query param, not CF Access)
 app.route('/cdp', cdp);
 
+// Mount Telegram webhook routes (unauthenticated — webhooks come from Telegram servers)
+// Must be before CF Access middleware. Validation is via bot token in URL.
+app.route('/api/telegram', telegram);
+
 // =============================================================================
 // PROTECTED ROUTES: Cloudflare Access authentication required
 // =============================================================================
@@ -161,6 +171,11 @@ app.use('*', async (c, next) => {
 
   // Skip validation for debug routes (they have their own enable check)
   if (url.pathname.startsWith('/debug')) {
+    return next();
+  }
+
+  // Skip validation for telegram webhook (only needs bot token, not full env)
+  if (url.pathname.startsWith('/api/telegram')) {
     return next();
   }
 
@@ -197,6 +212,12 @@ app.use('*', async (c, next) => {
 
 // Middleware: Cloudflare Access authentication for protected routes
 app.use('*', async (c, next) => {
+  // Skip CF Access for Telegram webhook (comes from Telegram servers, not browsers)
+  const url = new URL(c.req.url);
+  if (url.pathname.startsWith('/api/telegram')) {
+    return next();
+  }
+
   // Determine response type based on Accept header
   const acceptsHtml = c.req.header('Accept')?.includes('text/html');
   const middleware = createAccessMiddleware({
@@ -221,6 +242,9 @@ app.use('/debug/*', async (c, next) => {
   return next();
 });
 app.route('/debug', debug);
+
+// Mount Omega admin routes (protected by CF Access above)
+app.route('/api/omega', omegaAdmin);
 
 // =============================================================================
 // CATCH-ALL: Proxy to Moltbot gateway
@@ -345,7 +369,11 @@ app.all('*', async (c) => {
       console.log('[WS] serverWs.readyState:', serverWs.readyState);
     }
 
-    // Relay messages from client to container
+    // Relay messages from client to container.
+    // When CF Access authenticated the user but no ?token= was in the URL,
+    // inject the gateway token into the OpenClaw 'connect' protocol message.
+    // OpenClaw validates tokens at connect.params.auth.token (per docs).
+    const shouldInjectToken = !!c.env.MOLTBOT_GATEWAY_TOKEN && !url.searchParams.has('token');
     serverWs.addEventListener('message', (event) => {
       if (debugLogs) {
         console.log(
@@ -354,8 +382,27 @@ app.all('*', async (c) => {
           typeof event.data === 'string' ? event.data.slice(0, 200) : '(binary)',
         );
       }
+      let data = event.data;
+
+      // Inject gateway token into the OpenClaw 'connect' message
+      if (shouldInjectToken && typeof data === 'string') {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.method === 'connect' && parsed.params) {
+            if (!parsed.params.auth) parsed.params.auth = {};
+            parsed.params.auth.token = c.env.MOLTBOT_GATEWAY_TOKEN;
+            data = JSON.stringify(parsed);
+            if (debugLogs) {
+              console.log('[WS] Injected gateway token into connect.params.auth.token');
+            }
+          }
+        } catch {
+          /* not JSON, pass through */
+        }
+      }
+
       if (containerWs.readyState === WebSocket.OPEN) {
-        containerWs.send(event.data);
+        containerWs.send(data);
       } else if (debugLogs) {
         console.log('[WS] Container not open, readyState:', containerWs.readyState);
       }
@@ -501,4 +548,19 @@ app.all('*', async (c) => {
 
 export default {
   fetch: app.fetch,
+  async scheduled(event: ScheduledEvent, env: MoltbotEnv, ctx: ExecutionContext) {
+    // Daily backup of Omega user profiles to R2
+    if (env.OMEGA_PROFILES && env.MOLTBOT_BUCKET) {
+      const { backupProfilesToR2 } = await import('./integrations/omega-profiles');
+      ctx.waitUntil(
+        backupProfilesToR2(env.OMEGA_PROFILES, env.MOLTBOT_BUCKET)
+          .then((result) => {
+            console.log(`[Scheduled] Omega profile backup: ${result.profileCount} profiles → ${result.backupKey}`);
+          })
+          .catch((err) => {
+            console.error('[Scheduled] Omega profile backup failed:', err);
+          }),
+      );
+    }
+  },
 };

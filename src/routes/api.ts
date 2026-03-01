@@ -197,20 +197,22 @@ adminApi.post('/devices/approve-all', async (c) => {
 // GET /api/admin/storage - Get R2 storage status and last sync time
 adminApi.get('/storage', async (c) => {
   const sandbox = c.get('sandbox');
-  const hasCredentials = !!(
-    c.env.R2_ACCESS_KEY_ID &&
-    c.env.R2_SECRET_ACCESS_KEY &&
-    c.env.CF_ACCOUNT_ID
-  );
-
-  const missing: string[] = [];
-  if (!c.env.R2_ACCESS_KEY_ID) missing.push('R2_ACCESS_KEY_ID');
-  if (!c.env.R2_SECRET_ACCESS_KEY) missing.push('R2_SECRET_ACCESS_KEY');
-  if (!c.env.CF_ACCOUNT_ID) missing.push('CF_ACCOUNT_ID');
+  const bucket = c.env.MOLTBOT_BUCKET;
 
   let lastSync: string | null = null;
 
-  if (hasCredentials) {
+  // First try reading from R2 metadata (persists across container restarts)
+  try {
+    const head = await bucket.head('backups/config.tar.gz');
+    if (head?.customMetadata?.timestamp) {
+      lastSync = head.customMetadata.timestamp;
+    }
+  } catch {
+    // Ignore R2 errors
+  }
+
+  // Fall back to container-local timestamp (set during current session)
+  if (!lastSync) {
     try {
       const result = await sandbox.exec('cat /tmp/.last-sync 2>/dev/null || echo ""');
       const timestamp = result.stdout?.trim();
@@ -223,36 +225,33 @@ adminApi.get('/storage', async (c) => {
   }
 
   return c.json({
-    configured: hasCredentials,
-    missing: missing.length > 0 ? missing : undefined,
+    configured: true, // R2 binding is always available via wrangler config
     lastSync,
-    message: hasCredentials
-      ? 'R2 storage is configured. Your data will persist across container restarts.'
-      : 'R2 storage is not configured. Paired devices and conversations will be lost when the container restarts.',
+    message: 'R2 storage is configured via Worker binding. Your data will persist across container restarts.',
   });
 });
 
-// POST /api/admin/storage/sync - Trigger a manual sync to R2
+// POST /api/admin/storage/sync - Trigger a manual backup to R2
 adminApi.post('/storage/sync', async (c) => {
   const sandbox = c.get('sandbox');
+  const bucket = c.env.MOLTBOT_BUCKET;
 
-  const result = await syncToR2(sandbox, c.env);
+  const result = await syncToR2(sandbox, bucket);
 
   if (result.success) {
     return c.json({
       success: true,
-      message: 'Sync completed successfully',
+      message: 'Backup completed successfully',
       lastSync: result.lastSync,
     });
   } else {
-    const status = result.error?.includes('not configured') ? 400 : 500;
     return c.json(
       {
         success: false,
         error: result.error,
         details: result.details,
       },
-      status,
+      500,
     );
   }
 });
@@ -291,6 +290,26 @@ adminApi.post('/gateway/restart', async (c) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return c.json({ error: errorMessage }, 500);
+  }
+});
+
+// POST /api/admin/container/restart - Destroy and recreate the container
+// Use this after deploying a new container image to force eviction of the old instance.
+// The next request will cold-start a new container with the latest image.
+adminApi.post('/container/restart', async (c) => {
+  const sandbox = c.get('sandbox');
+
+  try {
+    console.log('[ADMIN] Destroying sandbox container for image refresh...');
+    await sandbox.destroy();
+    return c.json({
+      success: true,
+      message: 'Container destroyed. Next request will start a fresh container with the latest image.',
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[ADMIN] Container destroy failed:', errorMessage);
     return c.json({ error: errorMessage }, 500);
   }
 });
