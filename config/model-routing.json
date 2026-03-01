@@ -28,6 +28,7 @@
     "mid"
   ],
   "agent_tiers": {
+    "omega": "mid",
     "cfo-agent": "mid",
     "controller-agent": "free",
     "tax-strategist-agent": "mid",
@@ -79,7 +80,12 @@
     "qa-agent": "free",
     "data-analyst-agent": "light",
     "chair-agent": "mid",
-    "training-agent": "free"
+    "training-agent": "free",
+    "strategy-agent": "mid",
+    "competitive-intel-agent": "light",
+    "social-media-agent": "light",
+    "content-distribution-agent": "light",
+    "client-management-agent": "light"
   },
   "task_overrides": {
     "client_facing_deliverable": "premium",

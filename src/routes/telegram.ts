@@ -262,7 +262,7 @@ async function invokeAgent(
     // Resolve model based on agent tier
     const { model, tier } = agentName
       ? resolveModelForAgent(agentName)
-      : { model: env.CF_AI_GATEWAY_MODEL || 'anthropic/claude-sonnet-4-6', tier: 'mid' as ModelTier };
+      : { model: tiers['light'].model, tier: 'light' as ModelTier };
 
     const isWorkersAI = model.startsWith('workers-ai/');
     const modelId = isWorkersAI ? model.replace('workers-ai/', '') : model;

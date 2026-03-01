@@ -189,7 +189,12 @@ export function buildAgentPrompt(
       `Task: ${readableAction}.`,
       '',
       'Provide a concise, actionable response suitable for a Telegram message (max 4000 chars, use markdown formatting).',
-      'IMPORTANT: Use real dates relative to today. Do NOT use placeholder amounts — if you don\'t have real data, say so explicitly.',
+      '',
+      'CRITICAL RULES:',
+      '1. Do NOT fabricate data. If you have no real data source connected, say "No live data connected yet — here is what I would report once connected:" and describe your capabilities.',
+      '2. Do NOT invent dates, incident counts, vulnerability numbers, dollar amounts, or percentages.',
+      '3. If a task requires real-time data you cannot access, describe what data sources are needed and what you would provide once connected.',
+      '4. Be honest about what you can and cannot do right now.',
     ].join('\n');
   }
 
