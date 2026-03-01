@@ -20,6 +20,7 @@ import { loadConversationHistory, saveConversationTurn, historyToMessages } from
 import { buildOmegaPrompt } from '../integrations/omega-prompt';
 import { recallMemories, formatMemoriesForPrompt, ingestMemory, forgetAll } from '../integrations/cognitive-memory';
 import { getInterviewState, startInterview, processInterviewResponse, clearInterviewState } from '../integrations/cognitive-interview';
+import { getLatestSweep, formatSweepForTelegram, incrementRequestCounter } from '../integrations/security-sweep';
 import agentRegistry from '../generated/agent-registry.json';
 import {
   getMenuForCommand,
@@ -409,6 +410,12 @@ telegram.post('/webhook', async (c) => {
     return c.json({ ok: false, error: 'Invalid JSON' }, 400);
   }
 
+  // Increment request counter for anomaly detection (non-blocking)
+  const kvForCounter = c.env.OMEGA_PROFILES;
+  if (kvForCounter) {
+    c.executionCtx.waitUntil(incrementRequestCounter(kvForCounter));
+  }
+
 
   // ── Handle slash commands ────────────────────────────────────────────
   const message = update.message as Record<string, unknown> | undefined;
@@ -523,6 +530,26 @@ telegram.post('/webhook', async (c) => {
             await sendMessage(botToken, chatId, 'No active interview to cancel.');
           }
         }
+        return c.json({ ok: true });
+      }
+
+      // Special: /security — show latest security sweep results
+      if (command === '/security') {
+        const kv = c.env.OMEGA_PROFILES;
+        if (!kv) {
+          await sendMessage(botToken, chatId, '⚠️ Security monitoring not configured.');
+          return c.json({ ok: true });
+        }
+        const fromUser = message.from as Record<string, unknown> | undefined;
+        const uid = (fromUser?.id as number) || chatId;
+        const fname = (fromUser?.first_name as string) || `User ${uid}`;
+        const latestSweep = await getLatestSweep(kv);
+        if (latestSweep) {
+          await sendMessage(botToken, chatId, formatSweepForTelegram(latestSweep));
+        } else {
+          await sendMessage(botToken, chatId, '🔒 No security sweeps recorded yet. First sweep runs within 15 minutes.');
+        }
+        c.executionCtx.waitUntil(logActivity(kv, commandEntry(uid, fname, '/security')));
         return c.json({ ok: true });
       }
 

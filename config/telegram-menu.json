@@ -93,6 +93,10 @@
     {
       "command": "cancel",
       "description": "❌ Cancel active interview"
+    },
+    {
+      "command": "security",
+      "description": "🔒 Security sweep status"
     }
   ],
   "inline_keyboards": {

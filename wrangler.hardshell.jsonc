@@ -93,10 +93,17 @@
 			"index_name": "omega-cognitive-memory"
 		}
 	],
-	// Daily backup of Omega user profiles to R2 (6 AM UTC = 10 PM PST)
+	// Security sweep + profile backup cron triggers
+	// ┌─ */15: request anomaly detection
+	// ├─ hourly: Telegram webhook integrity
+	// ├─ 4h: CF API token liveness + full sweep
+	// └─ 6h: KV profile backup to R2
 	"triggers": {
 		"crons": [
-			"0 6 * * *"
+			"*/15 * * * *",
+			"0 * * * *",
+			"0 */4 * * *",
+			"0 */6 * * *"
 		]
 	},
 	// ============================================================

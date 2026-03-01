@@ -549,18 +549,28 @@ app.all('*', async (c) => {
 export default {
   fetch: app.fetch,
   async scheduled(event: ScheduledEvent, env: MoltbotEnv, ctx: ExecutionContext) {
-    // Daily backup of Omega user profiles to R2
-    if (env.OMEGA_PROFILES && env.MOLTBOT_BUCKET) {
-      const { backupProfilesToR2 } = await import('./integrations/omega-profiles');
-      ctx.waitUntil(
-        backupProfilesToR2(env.OMEGA_PROFILES, env.MOLTBOT_BUCKET)
-          .then((result) => {
-            console.log(`[Scheduled] Omega profile backup: ${result.profileCount} profiles → ${result.backupKey}`);
-          })
-          .catch((err) => {
-            console.error('[Scheduled] Omega profile backup failed:', err);
-          }),
-      );
+    // Security sweep runs on all crons — routes internally by event.cron
+    const { runSecuritySweep } = await import('./integrations/security-sweep');
+    ctx.waitUntil(
+      runSecuritySweep(event.cron, env).catch((err) => {
+        console.error(`[Scheduled] Security sweep failed (${event.cron}):`, err);
+      }),
+    );
+
+    // Profile backup runs on 6h schedule
+    if (event.cron === '0 */6 * * *') {
+      if (env.OMEGA_PROFILES && env.MOLTBOT_BUCKET) {
+        const { backupProfilesToR2 } = await import('./integrations/omega-profiles');
+        ctx.waitUntil(
+          backupProfilesToR2(env.OMEGA_PROFILES, env.MOLTBOT_BUCKET)
+            .then((result) => {
+              console.log(`[Scheduled] Omega profile backup: ${result.profileCount} profiles → ${result.backupKey}`);
+            })
+            .catch((err) => {
+              console.error('[Scheduled] Omega profile backup failed:', err);
+            }),
+        );
+      }
     }
   },
 };
