@@ -177,3 +177,46 @@ export function getWelcomeText(): string {
   const welcome = menus['help_menu'];
   return welcome?.text || '👋 Welcome! Use the menu commands to interact with agent teams.';
 }
+
+/**
+ * Get Omega's CLI context — dynamically generated from the live menu config.
+ * This ensures Omega always knows every command that exists.
+ */
+export function getOmegaCliContext(): string {
+  const config = menuConfig as {
+    bot_commands: Array<{ command: string; description: string }>;
+    inline_keyboards: Record<string, { text: string; buttons: Array<Array<{ text: string; callback_data: string }>> }>;
+  };
+
+  // Build command list from bot_commands (the source of truth)
+  const commandLines = config.bot_commands.map(
+    (cmd) => `/${cmd.command} — ${cmd.description}`,
+  );
+
+  // Build team menu details — what each team offers
+  const teamDetails: string[] = [];
+  for (const [menuKey, menu] of Object.entries(config.inline_keyboards)) {
+    if (menuKey === 'help_menu' || menuKey === 'team_menu') continue;
+    const teamName = menu.text.split('\n')[0];
+    const actions = menu.buttons
+      .flat()
+      .filter((btn) => btn.callback_data.startsWith('agent:'))
+      .map((btn) => `  • ${btn.text}`);
+    if (actions.length > 0) {
+      teamDetails.push(`${teamName}\n${actions.join('\n')}`);
+    }
+  }
+
+  return [
+    'AVAILABLE SLASH COMMANDS (from live config — these ALL work):',
+    ...commandLines,
+    '',
+    'TEAM MENUS AND THEIR AGENT ACTIONS:',
+    ...teamDetails,
+    '',
+    'IMPORTANT: Every command listed above is real and functional.',
+    'NEVER deny a command exists if it is in this list.',
+    'When a user asks about a topic, suggest the most relevant command.',
+    'You can also answer questions directly — use commands as tools.',
+  ].join('\n');
+}

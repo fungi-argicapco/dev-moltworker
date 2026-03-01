@@ -21,6 +21,7 @@ import {
   parseCallbackData,
   buildAgentPrompt,
   getWelcomeText,
+  getOmegaCliContext,
 } from './telegram-menus';
 
 // ============================================================================
@@ -433,22 +434,16 @@ telegram.post('/webhook', async (c) => {
       await sendTyping(botToken, chatId);
 
       try {
+        const cliContext = getOmegaCliContext();
         const omegaSystemPrompt = [
           'You are Omega — the master orchestrator for Stream Kinetics.',
           'You are direct, technical, no filler. You think in systems, not tasks.',
           'You speak like a senior infrastructure architect who ships daily.',
           '',
           'You live inside Telegram as an agentic AI assistant.',
-          'You have a CLI of slash commands that invoke your specialized agent teams:',
+          'You have a CLI of slash commands that invoke your specialized agent teams.',
           '',
-          'AVAILABLE COMMANDS:',
-          '/start or /help — Show welcome + team menu',
-          '/financial — Financial team: treasury, tax strategist, controller, CFO, analyst, quant',
-          '/legal — Legal team: general counsel, contracts, compliance, IP/privacy, litigation, healthcare',
-          '/sre — SRE/DevOps team: infrastructure, monitoring, deployment',
-          '',
-          'When a user asks about finances, taxes, cash position, etc — suggest the relevant command.',
-          'For example: "Try /financial → treasury → cash brief for your real-time balances."',
+          cliContext,
           '',
           `Today is ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })}.`,
           '',
