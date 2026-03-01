@@ -203,7 +203,16 @@ export function profileToContext(profile: UserProfile): string {
     return lines.join('\n');
   }
 
-  lines.push(`- ${profile.displayName}: ${profile.interactionCount} interactions since ${new Date(profile.firstSeen).toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' })}`);
+  // Use explicit Intl.DateTimeFormat for reliable timezone conversion on Workers
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'America/Los_Angeles',
+  });
+  const firstSeenDate = formatter.format(new Date(profile.firstSeen));
+
+  lines.push(`- ${profile.displayName}: ${profile.interactionCount} interactions since ${firstSeenDate}`);
 
   if (profile.communication.preferredStyle !== 'unknown') {
     lines.push(`- Prefers ${profile.communication.preferredStyle} responses`);
