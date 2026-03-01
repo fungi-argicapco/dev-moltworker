@@ -447,6 +447,111 @@ telegram.post('/webhook', async (c) => {
         return c.json({ ok: true });
       }
 
+      // Special: /costs — deterministic AI Gateway billing report (no LLM)
+      if (command === '/costs') {
+        await sendTyping(botToken, chatId);
+        const accountId = c.env.CF_AI_GATEWAY_ACCOUNT_ID;
+        const gatewayId = c.env.CF_AI_GATEWAY_GATEWAY_ID;
+        const apiKey = c.env.CLOUDFLARE_AI_GATEWAY_API_KEY;
+
+        if (!accountId || !gatewayId || !apiKey) {
+          await sendMessage(botToken, chatId, '⚠️ AI Gateway not configured.');
+          return c.json({ ok: true });
+        }
+
+        try {
+          const logsUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai-gateway/gateways/${gatewayId}/logs?per_page=50&order_by=created_at&order_by_direction=desc`;
+          const resp = await fetch(logsUrl, {
+            headers: { Authorization: `Bearer ${apiKey}` },
+          });
+          const data = (await resp.json()) as {
+            success: boolean;
+            result: Array<{
+              model: string;
+              tokens_in: number | null;
+              tokens_out: number | null;
+              cost: number | null;
+              created_at: string;
+              status_code: number;
+              provider: string;
+            }>;
+            errors?: Array<{ message: string }>;
+          };
+
+          if (!data.success) {
+            await sendMessage(botToken, chatId, `⚠️ AI Gateway API error: ${data.errors?.[0]?.message || 'Unknown'}`);
+            return c.json({ ok: true });
+          }
+
+          const logs = data.result || [];
+          if (logs.length === 0) {
+            await sendMessage(botToken, chatId, '📊 No AI Gateway usage found.');
+            return c.json({ ok: true });
+          }
+
+          // Aggregate by model
+          const models: Record<string, { calls: number; tokensIn: number; tokensOut: number; cost: number; errors: number }> = {};
+          for (const l of logs) {
+            const m = l.model || 'unknown';
+            if (!models[m]) models[m] = { calls: 0, tokensIn: 0, tokensOut: 0, cost: 0, errors: 0 };
+            models[m].calls++;
+            models[m].tokensIn += l.tokens_in || 0;
+            models[m].tokensOut += l.tokens_out || 0;
+            models[m].cost += l.cost || 0;
+            if (l.status_code >= 400) models[m].errors++;
+          }
+
+          // Date range
+          const dates = logs.map(l => l.created_at).filter(Boolean);
+          const earliest = dates.length ? new Date(Math.min(...dates.map(d => new Date(d).getTime()))) : null;
+          const latest = dates.length ? new Date(Math.max(...dates.map(d => new Date(d).getTime()))) : null;
+
+          // Total cost
+          const totalCost = Object.values(models).reduce((s, m) => s + m.cost, 0);
+          const totalCalls = Object.values(models).reduce((s, m) => s + m.calls, 0);
+
+          // Format Telegram message
+          const lines: string[] = [
+            `📊 *AI Gateway Cost Report*`,
+            `Gateway: \`${gatewayId}\``,
+            `Period: ${logs.length} requests`,
+          ];
+
+          if (earliest && latest) {
+            const fmtDate = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' });
+            lines.push(`Range: ${fmtDate(earliest)} → ${fmtDate(latest)}`);
+          }
+
+          lines.push('');
+
+          // Sort by cost descending
+          const sorted = Object.entries(models).sort((a, b) => b[1].cost - a[1].cost);
+          for (const [model, stats] of sorted) {
+            const shortModel = model.replace('@cf/meta/', '').replace('@cf/', '').replace('workers-ai/', '');
+            const costStr = stats.cost > 0 ? `$${stats.cost.toFixed(4)}` : 'FREE';
+            const errStr = stats.errors > 0 ? ` ⚠️${stats.errors}err` : '';
+            lines.push(`*${shortModel}*`);
+            lines.push(`  ${stats.calls} calls | ${stats.tokensIn}→${stats.tokensOut} tokens | ${costStr}${errStr}`);
+          }
+
+          lines.push('');
+          lines.push(`*Total: ${totalCalls} calls | $${totalCost.toFixed(4)}*`);
+
+          // Tier breakdown
+          const workersAICost = sorted.filter(([m]) => m.startsWith('@cf/')).reduce((s, [, v]) => s + v.cost, 0);
+          const anthropicCost = sorted.filter(([m]) => m.startsWith('claude')).reduce((s, [, v]) => s + v.cost, 0);
+          if (anthropicCost > 0 || workersAICost > 0) {
+            lines.push(`  Workers AI: $${workersAICost.toFixed(4)} | Anthropic: $${anthropicCost.toFixed(4)}`);
+          }
+
+          await sendMessage(botToken, chatId, lines.join('\n'));
+        } catch (err) {
+          await sendMessage(botToken, chatId, `⚠️ Error fetching costs: ${err instanceof Error ? err.message : 'Unknown'}`);
+        }
+
+        return c.json({ ok: true });
+      }
+
       // Slash command → team menu
       const menu = getMenuForCommand(command);
       if (menu) {

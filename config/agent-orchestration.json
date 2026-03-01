@@ -144,7 +144,7 @@
     },
     "talent": {
       "name": "Talent & People Team",
-      "emoji": "�‍💼",
+      "emoji": "🧑‍💼",
       "orchestrator": "chro-agent",
       "orchestrator_persona": null,
       "members": [
@@ -158,6 +158,24 @@
         "max_concurrent": 3,
         "timeout_seconds": 600,
         "model_escalation": false
+      }
+    },
+    "strategy": {
+      "name": "Strategy & Intelligence Team",
+      "emoji": "🎯",
+      "orchestrator": "strategy-agent",
+      "orchestrator_persona": null,
+      "members": [
+        "competitive-intel-agent",
+        "client-management-agent",
+        "social-media-agent",
+        "content-distribution-agent"
+      ],
+      "spawn_config": {
+        "max_depth": 2,
+        "max_concurrent": 4,
+        "timeout_seconds": 900,
+        "model_escalation": true
       }
     }
   },
