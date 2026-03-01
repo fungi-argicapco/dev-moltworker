@@ -203,7 +203,7 @@ export function profileToContext(profile: UserProfile): string {
     return lines.join('\n');
   }
 
-  lines.push(`- ${profile.displayName}: ${profile.interactionCount} interactions since ${new Date(profile.firstSeen).toLocaleDateString()}`);
+  lines.push(`- ${profile.displayName}: ${profile.interactionCount} interactions since ${new Date(profile.firstSeen).toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' })}`);
 
   if (profile.communication.preferredStyle !== 'unknown') {
     lines.push(`- Prefers ${profile.communication.preferredStyle} responses`);

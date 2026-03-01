@@ -16,6 +16,7 @@ import type { AppEnv } from '../types';
 import { callMcpTool, MCP_SERVERS } from '../integrations/mcp-client';
 import { loadProfile, saveProfile, updateProfileAfterInteraction, profileToContext } from '../integrations/omega-profiles';
 import { logActivity, chatEntry, commandEntry, getRecentActivity, getActivityStats, formatActivityForTelegram } from '../integrations/activity-log';
+import { loadConversationHistory, saveConversationTurn, historyToMessages } from '../integrations/conversation-history';
 import { buildOmegaPrompt } from '../integrations/omega-prompt';
 import agentRegistry from '../generated/agent-registry.json';
 import {
@@ -246,6 +247,7 @@ async function invokeAgent(
   prompt: string,
   agentName?: string,
   systemPrompt?: string,
+  conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>,
 ): Promise<string> {
   try {
     const accountId = env.CF_AI_GATEWAY_ACCOUNT_ID;
@@ -277,13 +279,16 @@ async function invokeAgent(
 
       const gatewayId = env.CF_AI_GATEWAY_GATEWAY_ID;
 
+      const messages = [
+        ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
+        ...(conversationHistory || []).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+        { role: 'user' as const, content: prompt },
+      ];
+
       const result = await env.AI.run(
         modelId as Parameters<typeof env.AI.run>[0],
         {
-          messages: [
-            ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
-            { role: 'user' as const, content: prompt },
-          ],
+          messages,
           max_tokens: 2048,
         },
         gatewayId ? { gateway: { id: gatewayId, skipCache: true } } : undefined,
@@ -318,8 +323,9 @@ async function invokeAgent(
         body: JSON.stringify({
           model: anthropicModel,
           max_tokens: 2048,
+          ...(systemPrompt ? { system: systemPrompt } : {}),
           messages: [
-            ...(systemPrompt ? [{ role: 'user', content: systemPrompt }, { role: 'assistant', content: 'Understood.' }] : []),
+            ...(conversationHistory || []),
             { role: 'user', content: prompt },
           ],
         }),
@@ -479,6 +485,13 @@ telegram.post('/webhook', async (c) => {
           userContext = profileToContext(profile);
         }
 
+        // Load conversation history for continuity across turns
+        let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+        if (kv) {
+          const rawHistory = await loadConversationHistory(kv, userId);
+          conversationHistory = historyToMessages(rawHistory);
+        }
+
         const cliContext = getOmegaCliContext();
         const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' });
         const omegaSystemPrompt = buildOmegaPrompt({
@@ -488,15 +501,16 @@ telegram.post('/webhook', async (c) => {
           today,
         });
 
-        const response = await invokeAgent(c.env, text, 'omega', omegaSystemPrompt);
+        const response = await invokeAgent(c.env, text, 'omega', omegaSystemPrompt, conversationHistory);
         await sendMessage(botToken, chatId, response);
 
-        // Save updated profile + log activity (non-blocking)
+        // Save updated profile + log activity + conversation turn (non-blocking)
         if (kv && profile) {
           c.executionCtx.waitUntil(
             Promise.all([
               saveProfile(kv, profile),
               logActivity(kv, chatEntry(userId, displayName, text)),
+              saveConversationTurn(kv, userId, text, response),
             ]),
           );
         }
