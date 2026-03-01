@@ -55,6 +55,10 @@
       "description": "📋 Compliance calendar (all teams)"
     },
     {
+      "command": "logs",
+      "description": "📊 Recent activity & system logs"
+    },
+    {
       "command": "help",
       "description": "❓ Available commands and navigation"
     }
@@ -220,6 +224,10 @@
           {
             "text": "🔧 Full Ops Report",
             "callback_data": "agent:coo:full_report"
+          },
+          {
+            "text": "📊 Activity Logs",
+            "callback_data": "menu:logs_action"
           }
         ]
       ]

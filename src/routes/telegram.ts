@@ -15,6 +15,7 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../types';
 import { callMcpTool, MCP_SERVERS } from '../integrations/mcp-client';
 import { loadProfile, saveProfile, updateProfileAfterInteraction, profileToContext } from '../integrations/omega-profiles';
+import { logActivity, chatEntry, commandEntry, getRecentActivity, getActivityStats, formatActivityForTelegram } from '../integrations/activity-log';
 import {
   getMenuForCommand,
   getMenuForCallback,
@@ -422,10 +423,34 @@ telegram.post('/webhook', async (c) => {
         return c.json({ ok: true });
       }
 
+      // Special: /logs show activity log
+      if (command === '/logs') {
+        const kv = c.env.OMEGA_PROFILES;
+        if (kv) {
+          const [entries, stats] = await Promise.all([
+            getRecentActivity(kv, 15),
+            getActivityStats(kv),
+          ]);
+          const logText = formatActivityForTelegram(entries, stats);
+          await sendMessage(botToken, chatId, logText);
+        } else {
+          await sendMessage(botToken, chatId, '⚠️ Activity logging not configured.');
+        }
+        return c.json({ ok: true });
+      }
+
       // Slash command → team menu
       const menu = getMenuForCommand(command);
       if (menu) {
         await sendMenu(botToken, chatId, menu.text, buildKeyboard(menu, true));
+        // Log command usage (non-blocking)
+        const kv = c.env.OMEGA_PROFILES;
+        if (kv) {
+          const fromUser = message.from as Record<string, unknown> | undefined;
+          const uid = (fromUser?.id as number) || chatId;
+          const fname = (fromUser?.first_name as string) || `User ${uid}`;
+          c.executionCtx.waitUntil(logActivity(kv, commandEntry(uid, fname, command)));
+        }
         return c.json({ ok: true });
       }
     }
@@ -500,9 +525,14 @@ telegram.post('/webhook', async (c) => {
         const response = await invokeAgent(c.env, text, 'omega', omegaSystemPrompt);
         await sendMessage(botToken, chatId, response);
 
-        // Save updated profile (non-blocking)
+        // Save updated profile + log activity (non-blocking)
         if (kv && profile) {
-          c.executionCtx.waitUntil(saveProfile(kv, profile));
+          c.executionCtx.waitUntil(
+            Promise.all([
+              saveProfile(kv, profile),
+              logActivity(kv, chatEntry(userId, displayName, text)),
+            ]),
+          );
         }
       } catch (err) {
         console.error('[Telegram] Omega chat error:', err);
