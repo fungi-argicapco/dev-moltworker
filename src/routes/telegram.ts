@@ -92,7 +92,24 @@ async function callTelegramApi(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  const result = await response.json();
+  const result = (await response.json()) as { ok: boolean; description?: string };
+
+  // If Telegram rejects markdown, retry without parse_mode
+  if (!result.ok && body.parse_mode && result.description?.includes("can't parse entities")) {
+    console.warn(`[Telegram] Markdown rejected, retrying as plain text: ${result.description}`);
+    const { parse_mode: _, ...plainBody } = body;
+    const retryRes = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(plainBody),
+    });
+    const retryResult = await retryRes.json();
+    if (!retryRes.ok) {
+      console.error(`[Telegram] API error (retry): ${method}`, JSON.stringify(retryResult));
+    }
+    return retryResult;
+  }
+
   if (!response.ok) {
     console.error(`[Telegram] API error: ${method}`, JSON.stringify(result));
   }
