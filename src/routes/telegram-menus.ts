@@ -148,7 +148,26 @@ export function parseCallbackData(
 export function buildAgentPrompt(agentName: string, action: string): string {
   const readableAction = action.replace(/_/g, ' ');
   const readableName = agentName.replace(/-/g, ' ');
-  return `You are the ${readableName} agent. Perform a: ${readableAction}. Provide a concise summary suitable for a Telegram message (max 4000 chars, use markdown formatting).`;
+
+  // Current date context so the LLM knows what time period it's operating in
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'America/Los_Angeles',
+  });
+  const quarter = Math.ceil((now.getMonth() + 1) / 3);
+  const fiscalYear = now.getFullYear();
+
+  return [
+    `You are the ${readableName} agent.`,
+    `Today is ${dateStr}. Current quarter: Q${quarter} ${fiscalYear}. Fiscal year: ${fiscalYear}.`,
+    `Task: ${readableAction}.`,
+    `Provide a concise, actionable summary suitable for a Telegram message (max 4000 chars, use markdown formatting).`,
+    `IMPORTANT: Use real dates relative to today. Do NOT use placeholder amounts like "$X,XXX" — if you don't have real data, say so explicitly.`,
+  ].join('\n');
 }
 
 /**
