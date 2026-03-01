@@ -76,6 +76,10 @@
   "browser": {
     "binding": "BROWSER",
   },
+  // Workers AI binding — routes through AI Gateway for logging/analytics
+  "ai": {
+    "binding": "AI",
+  },
   // ============================================================
   // SECRETS — set via: wrangler secret put <KEY> -c wrangler.hardshell.jsonc
   // ============================================================

@@ -40,6 +40,8 @@ export interface MoltbotEnv {
   CF_ACCESS_AUD?: string; // Application Audience (AUD) tag
   // Browser Rendering binding for CDP shim
   BROWSER?: Fetcher;
+  // Workers AI binding — used for free/light tier models via AI Gateway
+  AI?: Ai;
   CDP_SECRET?: string; // Shared secret for CDP endpoint authentication
   WORKER_URL?: string; // Public URL of the worker (for CDP endpoint)
   // Linear API

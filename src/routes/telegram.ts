@@ -244,39 +244,32 @@ async function invokeAgent(
     console.log(`[Telegram] Agent: ${agentName || 'default'}, tier: ${tier}, model: ${modelId}, provider: ${isWorkersAI ? 'workers-ai' : 'anthropic'}`);
 
     if (isWorkersAI) {
-      // Workers AI models via AI Gateway (Unified Billing)
-      const url = `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/workers-ai/${modelId}`;
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'cf-aig-authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          messages: [
-            { role: 'user', content: prompt },
-          ],
-          max_tokens: 2048,
-        }),
-      });
-
-      if (!response.ok) {
-        const errText = await response.text();
-        console.error(`[Telegram] Workers AI error (${tier}):`, response.status, errText);
-        return `⚠️ Agent unavailable (Workers AI returned ${response.status}). Try again later.`;
+      // Workers AI models via binding (auto-authenticated, no token needed)
+      // Routes through AI Gateway for logging/rate limiting via the gateway option
+      if (!env.AI) {
+        console.error('[Telegram] Workers AI binding not configured');
+        return '⚠️ Workers AI binding not configured. Add "ai" binding to wrangler config.';
       }
 
-      const data = (await response.json()) as {
-        result?: { response?: string };
-        response?: string;
-      };
+      const gatewayId = env.CF_AI_GATEWAY_GATEWAY_ID;
 
-      // Workers AI returns { result: { response: "..." } }
-      const agentResponse = data.result?.response || data.response || '';
+      const result = await env.AI.run(
+        modelId as Parameters<typeof env.AI.run>[0],
+        {
+          messages: [
+            { role: 'user' as const, content: prompt },
+          ],
+          max_tokens: 2048,
+        },
+        gatewayId ? { gateway: { id: gatewayId, skipCache: true } } : undefined,
+      );
+
+      // env.AI.run returns { response: "..." } for text generation models
+      const aiResult = result as { response?: string };
+      const agentResponse = aiResult.response || '';
 
       if (!agentResponse) {
-        console.error('[Telegram] Empty Workers AI response:', JSON.stringify(data));
+        console.error('[Telegram] Empty Workers AI response:', JSON.stringify(result));
         return '⚠️ Agent returned an empty response.';
       }
 
