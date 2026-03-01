@@ -1,0 +1,26 @@
+{
+  // Mercury MCP Server — Private banking data MCP server
+  // Exposes Mercury bank account data as MCP tools for agent consumption
+  "name": "mercury-mcp-server",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-04-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "MERCURY_MCP",
+        "class_name": "MercuryMCP"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "MercuryMCP"
+      ]
+    }
+  ]
+}

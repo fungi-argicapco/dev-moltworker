@@ -1,0 +1,26 @@
+{
+  // Stripe MCP Server — Private financial data MCP server
+  // Exposes Stripe revenue/payment data as MCP tools for agent consumption
+  "name": "stripe-mcp-server",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-04-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "STRIPE_MCP",
+        "class_name": "StripeMCP"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "StripeMCP"
+      ]
+    }
+  ]
+}
