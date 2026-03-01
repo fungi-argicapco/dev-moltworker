@@ -3,12 +3,12 @@
   "description": "Model routing configuration for Hardshell agent skills. Maps each agent to a model tier to optimize cost vs capability.",
   "tiers": {
     "free": {
-      "model": "workers-ai/@cf/meta/llama-4-scout-17b-16e-instruct",
+      "model": "workers-ai/@cf/meta/llama-3.2-3b-instruct",
       "description": "Workers AI free tier (Unified Billing). Use for routine formatting, lookups, categorization.",
       "cost_per_1m_tokens": 0
     },
     "light": {
-      "model": "workers-ai/@cf/meta/llama-4-maverick-17b-128e-instruct",
+      "model": "workers-ai/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
       "description": "Workers AI larger model. Use for structured analysis that needs more context.",
       "cost_per_1m_tokens": 0
     },
