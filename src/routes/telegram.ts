@@ -13,7 +13,7 @@
 
 import { Hono } from 'hono';
 import type { AppEnv } from '../types';
-import { getCashBrief } from '../integrations/mercury';
+import { callMcpTool, MCP_SERVERS } from '../integrations/mcp-client';
 import {
   getMenuForCommand,
   getMenuForCallback,
@@ -464,21 +464,41 @@ telegram.post('/webhook', async (c) => {
 
       let response: string;
 
-      // Direct data integrations — skip LLM for structured data queries
+      // Direct data integrations via MCP servers
       if (parsed.agentName === 'treasury' && parsed.action === 'cash_brief') {
-        // Treasury cash brief: fetch real Mercury balances
-        if (!c.env.MERCURY_API_TOKEN) {
-          response = '⚠️ Mercury API token not configured. Set MERCURY_API_TOKEN secret.';
-        } else {
-          try {
-            response = await getCashBrief(c.env.MERCURY_API_TOKEN);
-          } catch (err) {
-            console.error('[Telegram] Mercury API error:', err);
-            response = `⚠️ Failed to fetch Mercury data: ${err instanceof Error ? err.message : 'Unknown error'}`;
-          }
+        // Treasury cash brief: fetch from Mercury MCP server (no LLM needed)
+        try {
+          response = await callMcpTool(MCP_SERVERS.mercury, 'get_cash_brief');
+        } catch (err) {
+          console.error('[Telegram] Mercury MCP error:', err);
+          response = `⚠️ Failed to fetch Mercury data: ${err instanceof Error ? err.message : 'Unknown error'}`;
         }
+      } else if (
+        parsed.agentName === 'tax-strategist' ||
+        parsed.agentName === 'controller' ||
+        parsed.agentName === 'financial-analyst'
+      ) {
+        // Financial agents: inject real data context from MCP servers into LLM prompt
+        let dataContext = '';
+        try {
+          const [mercuryData, stripeData] = await Promise.allSettled([
+            callMcpTool(MCP_SERVERS.mercury, 'get_accounts'),
+            callMcpTool(MCP_SERVERS.stripe, 'get_revenue_summary', { period: 'qtd' }),
+          ]);
+          if (mercuryData.status === 'fulfilled') {
+            dataContext += `\n\n## Mercury Bank Accounts (Real Data)\n${mercuryData.value}`;
+          }
+          if (stripeData.status === 'fulfilled') {
+            dataContext += `\n\n## Stripe Revenue Summary (Real Data)\n${stripeData.value}`;
+          }
+        } catch (err) {
+          console.error('[Telegram] MCP data fetch error:', err);
+        }
+
+        const prompt = buildAgentPrompt(parsed.agentName, parsed.action) + dataContext;
+        response = await invokeAgent(c.env, prompt, parsed.agentName);
       } else {
-        // All other agents: invoke via AI model
+        // All other agents: invoke via AI model (no data injection)
         const prompt = buildAgentPrompt(parsed.agentName, parsed.action);
         response = await invokeAgent(c.env, prompt, parsed.agentName);
       }
