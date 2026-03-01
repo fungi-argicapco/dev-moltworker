@@ -13,6 +13,7 @@
 
 import { Hono } from 'hono';
 import type { AppEnv } from '../types';
+import { getCashBrief } from '../integrations/mercury';
 import {
   getMenuForCommand,
   getMenuForCallback,
@@ -461,9 +462,26 @@ telegram.post('/webhook', async (c) => {
       // Show typing indicator
       await sendTyping(botToken, chatId);
 
-      // Build the prompt and invoke
-      const prompt = buildAgentPrompt(parsed.agentName, parsed.action);
-      const response = await invokeAgent(c.env, prompt, parsed.agentName);
+      let response: string;
+
+      // Direct data integrations — skip LLM for structured data queries
+      if (parsed.agentName === 'treasury' && parsed.action === 'cash_brief') {
+        // Treasury cash brief: fetch real Mercury balances
+        if (!c.env.MERCURY_API_TOKEN) {
+          response = '⚠️ Mercury API token not configured. Set MERCURY_API_TOKEN secret.';
+        } else {
+          try {
+            response = await getCashBrief(c.env.MERCURY_API_TOKEN);
+          } catch (err) {
+            console.error('[Telegram] Mercury API error:', err);
+            response = `⚠️ Failed to fetch Mercury data: ${err instanceof Error ? err.message : 'Unknown error'}`;
+          }
+        }
+      } else {
+        // All other agents: invoke via AI model
+        const prompt = buildAgentPrompt(parsed.agentName, parsed.action);
+        response = await invokeAgent(c.env, prompt, parsed.agentName);
+      }
 
       // Send the agent's response
       const header = `🤖 *${parsed.agentName.replace(/-/g, ' ')}* → _${parsed.action.replace(/_/g, ' ')}_\n\n`;

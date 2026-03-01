@@ -49,6 +49,8 @@ export interface MoltbotEnv {
   // Multi-tenant client configuration
   AGENT_MODE?: string; // 'omega' (default) or 'client'
   CLIENT_NAME?: string; // Client slug (e.g., 'lowe-neuropsych') — required when AGENT_MODE='client'
+  // Mercury banking API
+  MERCURY_API_TOKEN?: string; // Read-only Mercury API token for account balances
 }
 
 /**
