@@ -18,6 +18,8 @@ import { loadProfile, saveProfile, updateProfileAfterInteraction, profileToConte
 import { logActivity, chatEntry, commandEntry, getRecentActivity, getActivityStats, formatActivityForTelegram } from '../integrations/activity-log';
 import { loadConversationHistory, saveConversationTurn, historyToMessages } from '../integrations/conversation-history';
 import { buildOmegaPrompt } from '../integrations/omega-prompt';
+import { recallMemories, formatMemoriesForPrompt, ingestMemory, forgetAll } from '../integrations/cognitive-memory';
+import { getInterviewState, startInterview, processInterviewResponse, clearInterviewState } from '../integrations/cognitive-interview';
 import agentRegistry from '../generated/agent-registry.json';
 import {
   getMenuForCommand,
@@ -447,6 +449,83 @@ telegram.post('/webhook', async (c) => {
         return c.json({ ok: true });
       }
 
+      // Special: /learn — start Cognitive Self-Portrait interview
+      if (command === '/learn') {
+        const kv = c.env.OMEGA_PROFILES;
+        if (!kv) {
+          await sendMessage(botToken, chatId, '⚠️ Knowledge graph not configured.');
+          return c.json({ ok: true });
+        }
+        const fromUser = message.from as Record<string, unknown> | undefined;
+        const uid = (fromUser?.id as number) || chatId;
+        const fname = (fromUser?.first_name as string) || `User ${uid}`;
+        const { state, message: introMsg } = startInterview();
+        await kv.put(`learn:${uid}`, JSON.stringify(state), { expirationTtl: 3600 });
+        await sendMessage(botToken, chatId, introMsg);
+        c.executionCtx.waitUntil(logActivity(kv, commandEntry(uid, fname, '/learn')));
+        return c.json({ ok: true });
+      }
+
+      // Special: /profile — show CSP summary
+      if (command === '/profile') {
+        const kv = c.env.OMEGA_PROFILES;
+        if (!kv) {
+          await sendMessage(botToken, chatId, '⚠️ Knowledge graph not configured.');
+          return c.json({ ok: true });
+        }
+        const fromUser = message.from as Record<string, unknown> | undefined;
+        const uid = (fromUser?.id as number) || chatId;
+        const fname = (fromUser?.first_name as string) || `User ${uid}`;
+        const lastName = (fromUser?.last_name as string) || '';
+        const displayName = [fname, lastName].filter(Boolean).join(' ') || `User ${uid}`;
+        const profile = await loadProfile(kv, uid, displayName);
+        const ctx = profileToContext(profile);
+        await sendMessage(botToken, chatId, `🧬 **Your Cognitive Self-Portrait**\n\n${ctx}`);
+        c.executionCtx.waitUntil(logActivity(kv, commandEntry(uid, fname, '/profile')));
+        return c.json({ ok: true });
+      }
+
+      // Special: /forget — wipe cognitive profile (privacy)
+      if (command === '/forget') {
+        const kv = c.env.OMEGA_PROFILES;
+        const vectorize = c.env.COGNITIVE_MEMORY;
+        if (!kv) {
+          await sendMessage(botToken, chatId, '⚠️ Knowledge graph not configured.');
+          return c.json({ ok: true });
+        }
+        const fromUser = message.from as Record<string, unknown> | undefined;
+        const uid = (fromUser?.id as number) || chatId;
+        const fname = (fromUser?.first_name as string) || `User ${uid}`;
+        // Delete KV profile
+        await kv.delete(`user:${uid}`);
+        // Delete Vectorize memories
+        let deletedCount = 0;
+        if (vectorize) {
+          const result = await forgetAll({ vectorize, userId: uid });
+          deletedCount = result.deleted;
+        }
+        await sendMessage(botToken, chatId, `🗑️ **Profile wiped.**\nDeleted KV profile and ${deletedCount} semantic memories.\nYour cognitive self-portrait has been reset.`);
+        c.executionCtx.waitUntil(logActivity(kv, commandEntry(uid, fname, '/forget')));
+        return c.json({ ok: true });
+      }
+
+      // Special: /cancel — cancel active interview
+      if (command === '/cancel') {
+        const kv = c.env.OMEGA_PROFILES;
+        if (kv) {
+          const fromUser = message.from as Record<string, unknown> | undefined;
+          const uid = (fromUser?.id as number) || chatId;
+          const existing = await getInterviewState(kv, uid);
+          if (existing) {
+            await clearInterviewState(kv, uid);
+            await sendMessage(botToken, chatId, '❌ Interview cancelled. Your answers so far have been saved.');
+          } else {
+            await sendMessage(botToken, chatId, 'No active interview to cancel.');
+          }
+        }
+        return c.json({ ok: true });
+      }
+
       // Special: /costs — deterministic AI Gateway billing report (no LLM)
       if (command === '/costs') {
         await sendTyping(botToken, chatId);
@@ -579,15 +658,79 @@ telegram.post('/webhook', async (c) => {
       const lastName = (fromUser?.last_name as string) || '';
       const displayName = [firstName, lastName].filter(Boolean).join(' ') || `User ${userId}`;
 
+      // Check if user is in a cognitive interview
+      const kv = c.env.OMEGA_PROFILES;
+      if (kv) {
+        const interviewState = await getInterviewState(kv, userId);
+        if (interviewState && interviewState.phase !== 'complete') {
+          try {
+            const ai = c.env.AI;
+            const vectorize = c.env.COGNITIVE_MEMORY;
+            if (ai && vectorize) {
+              const result = await processInterviewResponse({
+                ai, vectorize, kv, userId,
+                state: interviewState,
+                userResponse: text,
+              });
+
+              // If complete, update KV profile with extracted traits
+              if (result.isComplete) {
+                const profile = await loadProfile(kv, userId, displayName);
+                const traits = result.state.extractedTraits;
+                profile.cognition = {
+                  learningStyle: traits.learningStyle || profile.cognition.learningStyle,
+                  problemSolving: traits.problemSolving || profile.cognition.problemSolving,
+                  decisionMaking: traits.decisionMaking || profile.cognition.decisionMaking,
+                  communicationPattern: traits.communicationPattern || profile.cognition.communicationPattern,
+                };
+                profile.selfRepresentation = {
+                  roles: traits.roles.length ? traits.roles : profile.selfRepresentation.roles,
+                  values: profile.selfRepresentation.values,
+                  goals: traits.goals.length ? traits.goals : profile.selfRepresentation.goals,
+                  pressures: traits.pressures.length ? traits.pressures : profile.selfRepresentation.pressures,
+                  strengths: traits.strengths.length ? traits.strengths : profile.selfRepresentation.strengths,
+                  growthAreas: traits.growthAreas.length ? traits.growthAreas : profile.selfRepresentation.growthAreas,
+                  industry: traits.industry || profile.selfRepresentation.industry,
+                  workDescription: traits.workDescription || profile.selfRepresentation.workDescription,
+                };
+                c.executionCtx.waitUntil(saveProfile(kv, profile));
+              }
+
+              await sendMessage(botToken, chatId, result.message);
+            } else {
+              await sendMessage(botToken, chatId, '⚠️ AI not configured for interview. Use /cancel to exit.');
+            }
+          } catch (err) {
+            console.error('[Telegram] Interview error:', err);
+            await sendMessage(botToken, chatId, '⚠️ Interview error. Use /cancel to restart later.');
+          }
+          return c.json({ ok: true });
+        }
+      }
+
       try {
         // Load user knowledge graph
         let userContext = '';
         let profile: import('../integrations/omega-profiles').UserProfile | null = null;
-        const kv = c.env.OMEGA_PROFILES;
         if (kv) {
           profile = await loadProfile(kv, userId, displayName);
           profile = updateProfileAfterInteraction(profile, text);
           userContext = profileToContext(profile);
+        }
+
+        // Recall relevant memories from Vectorize (semantic search)
+        let memoriesContext = '';
+        const vectorize = c.env.COGNITIVE_MEMORY;
+        const ai = c.env.AI;
+        if (vectorize && ai) {
+          try {
+            const memories = await recallMemories({
+              ai, vectorize, userId, query: text, topK: 5,
+            });
+            memoriesContext = formatMemoriesForPrompt(memories);
+          } catch (err) {
+            console.error('[Telegram] Memory recall error:', err);
+          }
         }
 
         // Load conversation history for continuity across turns
@@ -604,20 +747,26 @@ telegram.post('/webhook', async (c) => {
           cliContext,
           registry: agentRegistry,
           today,
+          memories: memoriesContext,
         });
 
         const response = await invokeAgent(c.env, text, 'omega', omegaSystemPrompt, conversationHistory);
         await sendMessage(botToken, chatId, response);
 
-        // Save updated profile + log activity + conversation turn (non-blocking)
+        // Save updated profile + log activity + conversation turn + ingest memory (non-blocking)
         if (kv && profile) {
-          c.executionCtx.waitUntil(
-            Promise.all([
-              saveProfile(kv, profile),
-              logActivity(kv, chatEntry(userId, displayName, text)),
-              saveConversationTurn(kv, userId, text, response),
-            ]),
-          );
+          const bgTasks: Promise<unknown>[] = [
+            saveProfile(kv, profile),
+            logActivity(kv, chatEntry(userId, displayName, text)),
+            saveConversationTurn(kv, userId, text, response),
+          ];
+          // Ingest conversation into Vectorize for semantic recall
+          if (vectorize && ai) {
+            bgTasks.push(
+              ingestMemory({ ai, vectorize, userId, userMessage: text, assistantResponse: response }),
+            );
+          }
+          c.executionCtx.waitUntil(Promise.all(bgTasks));
         }
       } catch (err) {
         console.error('[Telegram] Omega chat error:', err);

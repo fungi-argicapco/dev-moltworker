@@ -36,12 +36,14 @@ export function buildOmegaPrompt(opts: {
   cliContext: string;
   registry: AgentRegistry;
   today: string;
+  memories?: string;
 }): string {
-  const { userContext, cliContext, registry, today } = opts;
+  const { userContext, cliContext, registry, today, memories } = opts;
 
   return [
     buildIdentity(),
     buildUserSection(userContext),
+    memories || '',
     buildCapabilitiesManifest(registry),
     buildConnectedSystems(),
     buildOperatingRules(),

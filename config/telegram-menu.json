@@ -73,6 +73,26 @@
     {
       "command": "help",
       "description": "❓ Available commands and navigation"
+    },
+    {
+      "command": "costs",
+      "description": "📊 AI Gateway usage & billing"
+    },
+    {
+      "command": "learn",
+      "description": "🧬 Build your Cognitive Self-Portrait"
+    },
+    {
+      "command": "profile",
+      "description": "🪪 View your cognitive profile"
+    },
+    {
+      "command": "forget",
+      "description": "🗑️ Wipe your cognitive profile (privacy)"
+    },
+    {
+      "command": "cancel",
+      "description": "❌ Cancel active interview"
     }
   ],
   "inline_keyboards": {

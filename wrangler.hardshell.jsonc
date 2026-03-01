@@ -86,6 +86,13 @@
 			"id": "8b9efc73829d468e91b80d1322808ae0"
 		}
 	],
+	// Vectorize — Cognitive Self-Portrait semantic memory (per-client namespace isolation)
+	"vectorize": [
+		{
+			"binding": "COGNITIVE_MEMORY",
+			"index_name": "omega-cognitive-memory"
+		}
+	],
 	// Daily backup of Omega user profiles to R2 (6 AM UTC = 10 PM PST)
 	"triggers": {
 		"crons": [

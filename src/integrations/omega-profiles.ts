@@ -9,7 +9,7 @@
  */
 
 // Current schema version — increment when adding/changing fields
-const CURRENT_SCHEMA_VERSION = 2;
+const CURRENT_SCHEMA_VERSION = 3;
 
 export interface UserProfile {
   /** Schema version for migration */
@@ -43,6 +43,23 @@ export interface UserProfile {
   goals: string[];
   /** Teams/commands the user uses most */
   frequentCommands: Record<string, number>;
+  /** Cognitive Self-Portrait dimensions (v3) */
+  cognition: {
+    learningStyle: string;
+    problemSolving: string;
+    decisionMaking: string;
+    communicationPattern: string;
+  };
+  selfRepresentation: {
+    roles: string[];
+    values: string[];
+    goals: string[];
+    pressures: string[];
+    strengths: string[];
+    growthAreas: string[];
+    industry: string;
+    workDescription: string;
+  };
 }
 
 // ============================================================================
@@ -63,8 +80,29 @@ function migrateProfile(raw: Record<string, unknown>): UserProfile {
     if (!raw.observations) raw.observations = [];
   }
 
-  // Future migrations go here:
-  // if (version < 3) { ... }
+  // v2 → v3: Cognitive Self-Portrait dimensions
+  if (version < 3) {
+    if (!raw.cognition) {
+      raw.cognition = {
+        learningStyle: '',
+        problemSolving: '',
+        decisionMaking: '',
+        communicationPattern: '',
+      };
+    }
+    if (!raw.selfRepresentation) {
+      raw.selfRepresentation = {
+        roles: [],
+        values: [],
+        goals: [],
+        pressures: [],
+        strengths: [],
+        growthAreas: [],
+        industry: '',
+        workDescription: '',
+      };
+    }
+  }
 
   raw.schemaVersion = CURRENT_SCHEMA_VERSION;
   return raw as unknown as UserProfile;
@@ -113,6 +151,22 @@ export async function loadProfile(
     observations: [],
     goals: [],
     frequentCommands: {},
+    cognition: {
+      learningStyle: '',
+      problemSolving: '',
+      decisionMaking: '',
+      communicationPattern: '',
+    },
+    selfRepresentation: {
+      roles: [],
+      values: [],
+      goals: [],
+      pressures: [],
+      strengths: [],
+      growthAreas: [],
+      industry: '',
+      workDescription: '',
+    },
   };
 }
 
@@ -239,6 +293,33 @@ export function profileToContext(profile: UserProfile): string {
   if (profile.observations.length > 0) {
     const recent = profile.observations.slice(-5);
     lines.push(`- Observations: ${recent.join('; ')}`);
+  }
+
+  // Cognitive Self-Portrait dimensions (v3)
+  const cog = profile.cognition;
+  if (cog && (cog.learningStyle || cog.problemSolving || cog.decisionMaking || cog.communicationPattern)) {
+    lines.push('');
+    lines.push('### Cognitive Profile');
+    if (cog.learningStyle) lines.push(`- Learning style: ${cog.learningStyle}`);
+    if (cog.problemSolving) lines.push(`- Problem-solving: ${cog.problemSolving}`);
+    if (cog.decisionMaking) lines.push(`- Decision-making: ${cog.decisionMaking}`);
+    if (cog.communicationPattern) lines.push(`- Communication: ${cog.communicationPattern}`);
+  }
+
+  const self = profile.selfRepresentation;
+  if (self) {
+    const hasSelfData = self.roles?.length || self.industry || self.goals?.length || self.strengths?.length;
+    if (hasSelfData) {
+      lines.push('');
+      lines.push('### Self-Representation');
+      if (self.roles?.length) lines.push(`- Roles: ${self.roles.join(', ')}`);
+      if (self.industry) lines.push(`- Industry: ${self.industry}`);
+      if (self.workDescription) lines.push(`- Work: ${self.workDescription}`);
+      if (self.goals?.length) lines.push(`- Current goals: ${self.goals.join('; ')}`);
+      if (self.pressures?.length) lines.push(`- Pressures: ${self.pressures.join('; ')}`);
+      if (self.strengths?.length) lines.push(`- Strengths: ${self.strengths.join(', ')}`);
+      if (self.growthAreas?.length) lines.push(`- Growth areas: ${self.growthAreas.join(', ')}`);
+    }
   }
 
   return lines.join('\n');
