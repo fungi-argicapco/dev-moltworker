@@ -27,7 +27,7 @@ import type { AppEnv, MoltbotEnv } from './types';
 import { MOLTBOT_PORT } from './config';
 import { createAccessMiddleware } from './auth';
 import { ensureMoltbotGateway, findExistingMoltbotProcess } from './gateway';
-import { publicRoutes, api, adminUi, debug, cdp, telegram } from './routes';
+import { publicRoutes, api, adminUi, debug, cdp, telegram, omegaAdmin } from './routes';
 import { redactSensitiveParams } from './utils/logging';
 import loadingPageHtml from './assets/loading.html';
 import configErrorHtml from './assets/config-error.html';
@@ -242,6 +242,9 @@ app.use('/debug/*', async (c, next) => {
   return next();
 });
 app.route('/debug', debug);
+
+// Mount Omega admin routes (protected by CF Access above)
+app.route('/api/omega', omegaAdmin);
 
 // =============================================================================
 // CATCH-ALL: Proxy to Moltbot gateway
@@ -545,4 +548,19 @@ app.all('*', async (c) => {
 
 export default {
   fetch: app.fetch,
+  async scheduled(event: ScheduledEvent, env: MoltbotEnv, ctx: ExecutionContext) {
+    // Daily backup of Omega user profiles to R2
+    if (env.OMEGA_PROFILES && env.MOLTBOT_BUCKET) {
+      const { backupProfilesToR2 } = await import('./integrations/omega-profiles');
+      ctx.waitUntil(
+        backupProfilesToR2(env.OMEGA_PROFILES, env.MOLTBOT_BUCKET)
+          .then((result) => {
+            console.log(`[Scheduled] Omega profile backup: ${result.profileCount} profiles → ${result.backupKey}`);
+          })
+          .catch((err) => {
+            console.error('[Scheduled] Omega profile backup failed:', err);
+          }),
+      );
+    }
+  },
 };

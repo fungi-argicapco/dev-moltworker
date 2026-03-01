@@ -86,6 +86,12 @@
 			"id": "8b9efc73829d468e91b80d1322808ae0"
 		}
 	],
+	// Daily backup of Omega user profiles to R2 (6 AM UTC = 10 PM PST)
+	"triggers": {
+		"crons": [
+			"0 6 * * *"
+		]
+	},
 	// ============================================================
 	// SECRETS — set via: wrangler secret put <KEY> -c wrangler.hardshell.jsonc
 	// ============================================================
