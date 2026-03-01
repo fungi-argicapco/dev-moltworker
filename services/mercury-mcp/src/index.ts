@@ -248,4 +248,4 @@ export class MercuryMCP extends McpAgent<Env> {
 // Export Worker handler
 // --------------------------------------------------------------------------
 
-export default MercuryMCP.serve('/mcp');
+export default MercuryMCP.serve('/mcp', { binding: 'MERCURY_MCP' });
