@@ -142,14 +142,21 @@ export function parseCallbackData(
 /**
  * Build a prompt for an agent from callback_data action.
  *
- * E.g., agent "sre" with action "health_check" →
- *   "You are the SRE agent. Perform a: health check. Provide a concise summary."
+ * When registry is provided, injects the agent's full SKILL.md content
+ * as its system prompt — giving it deep knowledge of its role, capabilities,
+ * tools, output formats, and security boundaries.
+ *
+ * Falls back to a generic prompt when registry is not provided.
  */
-export function buildAgentPrompt(agentName: string, action: string): string {
+export function buildAgentPrompt(
+  agentName: string,
+  action: string,
+  registry?: { agents: Record<string, { skillContent?: string; description?: string }> },
+): string {
   const readableAction = action.replace(/_/g, ' ');
   const readableName = agentName.replace(/-/g, ' ');
 
-  // Current date context so the LLM knows what time period it's operating in
+  // Current date context
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-US', {
     weekday: 'long',
@@ -161,6 +168,26 @@ export function buildAgentPrompt(agentName: string, action: string): string {
   const quarter = Math.ceil((now.getMonth() + 1) / 3);
   const fiscalYear = now.getFullYear();
 
+  // Try to load agent's SKILL.md content from registry
+  const agentEntry = registry?.agents?.[agentName] || registry?.agents?.[`${agentName}-agent`];
+  const skillContent = agentEntry?.skillContent;
+
+  if (skillContent) {
+    // Rich prompt using SKILL.md
+    return [
+      skillContent,
+      '',
+      '---',
+      '',
+      `Today is ${dateStr}. Current quarter: Q${quarter} ${fiscalYear}.`,
+      `Task: ${readableAction}.`,
+      '',
+      'Provide a concise, actionable response suitable for a Telegram message (max 4000 chars, use markdown formatting).',
+      'IMPORTANT: Use real dates relative to today. Do NOT use placeholder amounts — if you don\'t have real data, say so explicitly.',
+    ].join('\n');
+  }
+
+  // Fallback: generic prompt when no SKILL.md available
   return [
     `You are the ${readableName} agent.`,
     `Today is ${dateStr}. Current quarter: Q${quarter} ${fiscalYear}. Fiscal year: ${fiscalYear}.`,

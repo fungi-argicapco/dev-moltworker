@@ -19,6 +19,7 @@ interface AgentEntry {
   team?: string;
   capabilities: string[];
   tools: string[];
+  skillContent: string;
 }
 
 interface AgentRegistry {
@@ -153,6 +154,9 @@ async function main() {
       const tools = extractTools(content);
       const team = teamMap[frontmatter.name] || undefined;
 
+      // Extract body after frontmatter for system prompt use
+      const skillContent = content.replace(/^---\n[\s\S]*?\n---\n*/, '').trim();
+
       agents[frontmatter.name] = {
         name: frontmatter.name,
         model_tier: frontmatter.model_tier || 'free',
@@ -160,6 +164,7 @@ async function main() {
         team,
         capabilities,
         tools,
+        skillContent,
       };
 
       // Build team index

@@ -591,11 +591,11 @@ telegram.post('/webhook', async (c) => {
           console.error('[Telegram] MCP data fetch error:', err);
         }
 
-        const prompt = buildAgentPrompt(parsed.agentName, parsed.action) + dataContext;
+        const prompt = buildAgentPrompt(parsed.agentName, parsed.action, agentRegistry) + dataContext;
         response = await invokeAgent(c.env, prompt, parsed.agentName);
       } else {
         // All other agents: invoke via AI model (no data injection)
-        const prompt = buildAgentPrompt(parsed.agentName, parsed.action);
+        const prompt = buildAgentPrompt(parsed.agentName, parsed.action, agentRegistry);
         response = await invokeAgent(c.env, prompt, parsed.agentName);
       }
 

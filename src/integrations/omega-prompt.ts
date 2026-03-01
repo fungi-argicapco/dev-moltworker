@@ -159,15 +159,4 @@ function buildOperatingRules(): string {
   ].join('\n');
 }
 
-/**
- * Build a system prompt for a delegated sub-agent from its SKILL.md content.
- */
-export function buildAgentPrompt(skillContent: string, userMessage: string): string {
-  return [
-    skillContent,
-    '',
-    '## Context',
-    `You are being delegated this task by Omega. Respond directly and concisely.`,
-    `User's request: "${userMessage}"`,
-  ].join('\n');
-}
+
