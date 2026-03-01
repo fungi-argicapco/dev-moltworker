@@ -27,6 +27,18 @@
       "description": "📦 Product team dashboard"
     },
     {
+      "command": "strategy",
+      "description": "🎯 Strategy & competitive intel"
+    },
+    {
+      "command": "social",
+      "description": "📱 Social media & content distribution"
+    },
+    {
+      "command": "clients",
+      "description": "👤 Client dashboard & health"
+    },
+    {
       "command": "tax",
       "description": "🧮 Quick: quarterly tax estimate"
     },
@@ -314,8 +326,111 @@
         ]
       ]
     },
+    "strategy_menu": {
+      "text": "🎯 **Strategy & Intelligence**\nSelect an action:",
+      "buttons": [
+        [
+          {
+            "text": "🎯 Strategy Brief",
+            "callback_data": "agent:strategy:strategy_brief"
+          },
+          {
+            "text": "🔍 Competitive Intel",
+            "callback_data": "agent:competitive-intel:market_radar"
+          }
+        ],
+        [
+          {
+            "text": "📊 Market Position",
+            "callback_data": "agent:competitive-intel:positioning"
+          },
+          {
+            "text": "📈 Growth Trajectory",
+            "callback_data": "agent:strategy:growth_model"
+          }
+        ],
+        [
+          {
+            "text": "🎯 Full Strategy Report",
+            "callback_data": "agent:strategy:full_report"
+          }
+        ]
+      ]
+    },
+    "social_menu": {
+      "text": "📱 **Social Media & Content**\nSelect an action:",
+      "buttons": [
+        [
+          {
+            "text": "📊 Social Dashboard",
+            "callback_data": "agent:social-media:dashboard"
+          },
+          {
+            "text": "📅 Content Calendar",
+            "callback_data": "agent:content-marketing:calendar"
+          }
+        ],
+        [
+          {
+            "text": "🎬 Distribution Pipeline",
+            "callback_data": "agent:content-distribution:pipeline_status"
+          },
+          {
+            "text": "🔥 Viral Clips",
+            "callback_data": "agent:content-distribution:top_clips"
+          }
+        ],
+        [
+          {
+            "text": "📈 Platform Analytics",
+            "callback_data": "agent:social-media:analytics"
+          },
+          {
+            "text": "🎥 Video Library",
+            "callback_data": "agent:content-distribution:video_library"
+          }
+        ],
+        [
+          {
+            "text": "📱 Full Social Report",
+            "callback_data": "agent:social-media:full_report"
+          }
+        ]
+      ]
+    },
+    "clients_menu": {
+      "text": "👤 **Client Management**\nSelect an action:",
+      "buttons": [
+        [
+          {
+            "text": "📊 Client Dashboard",
+            "callback_data": "agent:client-management:dashboard"
+          },
+          {
+            "text": "💚 Health Scores",
+            "callback_data": "agent:client-management:health_scores"
+          }
+        ],
+        [
+          {
+            "text": "📋 Active Projects",
+            "callback_data": "agent:client-management:active_projects"
+          },
+          {
+            "text": "💰 Revenue by Client",
+            "callback_data": "agent:client-management:revenue"
+          }
+        ],
+        [
+          {
+            "text": "👤 Full Client Report",
+            "callback_data": "agent:client-management:full_report"
+          }
+        ]
+      ]
+    },
     "team_menu": {
-      "text": "👥 **Agent Team Overview**\n51 agents across 8 teams:",
+      "text": "👥 **Agent Team Overview**\n57 agents across 8 teams + strategy:",
       "buttons": [
         [
           {
@@ -345,6 +460,20 @@
           {
             "text": "📦 Product (5)",
             "callback_data": "menu:product"
+          }
+        ],
+        [
+          {
+            "text": "🎯 Strategy",
+            "callback_data": "menu:strategy"
+          },
+          {
+            "text": "📱 Social",
+            "callback_data": "menu:social"
+          },
+          {
+            "text": "👤 Clients",
+            "callback_data": "menu:clients"
           }
         ],
         [

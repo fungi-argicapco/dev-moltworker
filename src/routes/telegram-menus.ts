@@ -49,6 +49,9 @@ const COMMAND_TO_MENU: Record<string, string> = {
   '/ops': 'ops_menu',
   '/growth': 'growth_menu',
   '/product': 'product_menu',
+  '/strategy': 'strategy_menu',
+  '/social': 'social_menu',
+  '/clients': 'clients_menu',
   '/teams': 'team_menu',
   '/team': 'team_menu',
   '/talent': 'team_menu', // talent shows via team overview for now
@@ -66,6 +69,9 @@ const CALLBACK_TO_MENU: Record<string, string> = {
   'menu:ops': 'ops_menu',
   'menu:growth': 'growth_menu',
   'menu:product': 'product_menu',
+  'menu:strategy': 'strategy_menu',
+  'menu:social': 'social_menu',
+  'menu:clients': 'clients_menu',
   'menu:teams': 'team_menu',
 };
 
