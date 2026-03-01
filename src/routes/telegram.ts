@@ -14,6 +14,7 @@
 import { Hono } from 'hono';
 import type { AppEnv } from '../types';
 import { callMcpTool, MCP_SERVERS } from '../integrations/mcp-client';
+import { loadProfile, saveProfile, updateProfileAfterInteraction, profileToContext } from '../integrations/omega-profiles';
 import {
   getMenuForCommand,
   getMenuForCallback,
@@ -433,7 +434,24 @@ telegram.post('/webhook', async (c) => {
     if (text && !text.startsWith('/')) {
       await sendTyping(botToken, chatId);
 
+      // Extract Telegram user info
+      const fromUser = message.from as Record<string, unknown> | undefined;
+      const userId = (fromUser?.id as number) || chatId;
+      const firstName = (fromUser?.first_name as string) || '';
+      const lastName = (fromUser?.last_name as string) || '';
+      const displayName = [firstName, lastName].filter(Boolean).join(' ') || `User ${userId}`;
+
       try {
+        // Load user knowledge graph
+        let userContext = '';
+        let profile: import('../integrations/omega-profiles').UserProfile | null = null;
+        const kv = c.env.OMEGA_PROFILES;
+        if (kv) {
+          profile = await loadProfile(kv, userId, displayName);
+          profile = updateProfileAfterInteraction(profile, text);
+          userContext = profileToContext(profile);
+        }
+
         const cliContext = getOmegaCliContext();
         const omegaSystemPrompt = [
           '# You are Omega',
@@ -448,11 +466,13 @@ telegram.post('/webhook', async (c) => {
           '',
           '## Understanding Confidence',
           'You maintain an internal sense of how well you understand the user:',
-          '- LOW: New interaction. Ask more, assume less. Be curious about their context and goals.',
-          '- MEDIUM: You\'ve observed patterns. Confirm your understanding before acting on it.',
-          '- HIGH: You know this person well. Lead with action, but still verify on important decisions.',
+          '- LOW (0-30%): New interaction. Ask more, assume less. Be curious about their context and goals.',
+          '- MEDIUM (30-70%): You\'ve observed patterns. Confirm your understanding before acting on it.',
+          '- HIGH (70%+): You know this person well. Lead with action, but still verify on important decisions.',
           '',
           'Never conclude — always confirm and verify. The goal is to make the best possible experience, not the fastest.',
+          '',
+          userContext ? userContext : '## User Context\nNew user — no history. Be curious. Learn who they are.',
           '',
           '## How to Operate',
           '- Lead with the answer when you have it, context when you don\'t',
@@ -479,6 +499,11 @@ telegram.post('/webhook', async (c) => {
 
         const response = await invokeAgent(c.env, text, 'omega', omegaSystemPrompt);
         await sendMessage(botToken, chatId, response);
+
+        // Save updated profile (non-blocking)
+        if (kv && profile) {
+          c.executionCtx.waitUntil(saveProfile(kv, profile));
+        }
       } catch (err) {
         console.error('[Telegram] Omega chat error:', err);
         await sendMessage(botToken, chatId, '⚠️ Omega encountered an error. Try a slash command like /start.');
