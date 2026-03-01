@@ -1,0 +1,782 @@
+{
+  "version": "1.0",
+  "generated": "2026-03-01T05:22:05.049Z",
+  "agents": {
+    "video-moment-analyzer": {
+      "name": "video-moment-analyzer",
+      "model_tier": "free",
+      "description": "Analyze video for emotional peaks, viral moments, and subject tracking. Use for extracting key moments from Cloudflare Stream videos, detecting speech/music/emotional peaks, and generating clip metadata for multi-platform distribution.",
+      "team": "platform",
+      "capabilities": [],
+      "tools": []
+    },
+    "content-marketing-agent": {
+      "name": "content-marketing-agent",
+      "model_tier": "light",
+      "description": "Content marketing and social media agent. Creates blog posts, social content, email campaigns, SEO-optimized pages, and manages content calendars across channels.",
+      "team": "growth",
+      "capabilities": [
+        "Blog Content",
+        "Social Media",
+        "Email Campaigns",
+        "SEO Strategy",
+        "Content Calendar",
+        "Brand Voice"
+      ],
+      "tools": []
+    },
+    "customer-support-agent": {
+      "name": "customer-support-agent",
+      "model_tier": "free",
+      "description": "Customer support and engagement agent. Analyzes support tickets, drafts response templates, generates FAQ content, tracks resolution metrics, identifies recurring issues, and provides support quality insights.",
+      "team": "growth",
+      "capabilities": [
+        "Ticket Analysis",
+        "Response Templates",
+        "FAQ Generation",
+        "Resolution Metrics",
+        "Issue Pattern Detection",
+        "Knowledge Base"
+      ],
+      "tools": []
+    },
+    "crm-analyst-agent": {
+      "name": "crm-analyst-agent",
+      "model_tier": "free",
+      "description": "Query Cloudflare D1 databases (crm-db, contentguru-db) to mine customer data, identify opportunities, discover cross-sell patterns, and extract insights per initiative. Use when analyzing customers, finding upsell/cross-sell candidates, identifying implementation patterns, or building data-driven customer/client apps.",
+      "team": "platform",
+      "capabilities": [],
+      "tools": []
+    },
+    "quant-agent": {
+      "name": "quant-agent",
+      "model_tier": "light",
+      "description": "Quantitative analysis and market intelligence agent. Covers equities, options, forex, commodities, bonds, and cash equivalents. Provides backtesting, portfolio optimization, technical analysis, and paper/live trading via Alpaca API.",
+      "team": "financial",
+      "capabilities": [
+        "Portfolio Optimization",
+        "Technical Analysis",
+        "Risk Metrics",
+        "Backtesting",
+        "Options Analysis",
+        "Yield Curve Analysis",
+        "Tax-Aware Rebalancing"
+      ],
+      "tools": []
+    },
+    "ip-privacy-agent": {
+      "name": "ip-privacy-agent",
+      "model_tier": "light",
+      "description": "Intellectual property and data privacy agent. Handles patent/trademark searches via USPTO API, privacy compliance (GDPR, CCPA/CPRA, HIPAA), data protection impact assessments, open source license scanning, and trade secret management.",
+      "team": "legal",
+      "capabilities": [
+        "Trademark Search",
+        "Patent Landscape",
+        "Privacy Compliance",
+        "Data Protection",
+        "Open Source Compliance",
+        "Trade Secret Management",
+        "Data Breach Response"
+      ],
+      "tools": []
+    },
+    "chair-agent": {
+      "name": "chair-agent",
+      "model_tier": "mid",
+      "description": "Chief Human-AI Relations Officer. Manages the agent team lifecycle — capability auditing, performance scoring, team composition optimization, agent onboarding, and cross-agent collaboration standards. Meta-agent that manages other agents.",
+      "capabilities": [
+        "Agent Inventory",
+        "Performance Scoring",
+        "Capability Gap Analysis",
+        "Agent Onboarding",
+        "Cross-Agent Standards",
+        "Team Composition",
+        "Model Tier Optimization"
+      ],
+      "tools": []
+    },
+    "devops-agent": {
+      "name": "devops-agent",
+      "model_tier": "free",
+      "description": "DevOps and CI/CD agent. Manages deployment pipelines, build automation, infrastructure-as-code, environment management, and release orchestration for Cloudflare Workers platform.",
+      "team": "operations",
+      "capabilities": [
+        "Build Management",
+        "Deployment Orchestration",
+        "Environment Management",
+        "Infrastructure-as-Code",
+        "Release Management",
+        "Pipeline Health"
+      ],
+      "tools": []
+    },
+    "learning-development-agent": {
+      "name": "learning-development-agent",
+      "model_tier": "free",
+      "description": "Learning and development agent. Designs training programs, manages onboarding curricula, tracks skill development, curates learning resources, and supports career growth pathways.",
+      "team": "talent",
+      "capabilities": [
+        "Onboarding Programs",
+        "Training Design",
+        "Skill Gap Analysis",
+        "Learning Resources",
+        "Career Pathways",
+        "Knowledge Management"
+      ],
+      "tools": []
+    },
+    "controller-agent": {
+      "name": "controller-agent",
+      "model_tier": "free",
+      "description": "Bookkeeping, P&L reporting, monthly close, and reconciliation agent. Integrates with Wave, QuickBooks, and Xero for chart of accounts management, invoice tracking, and expense categorization.",
+      "team": "financial",
+      "capabilities": [
+        "Chart of Accounts Management",
+        "Monthly Close Process",
+        "Financial Statements",
+        "Expense Categorization",
+        "Invoice Management",
+        "Receipt Capture",
+        "Reconciliation"
+      ],
+      "tools": []
+    },
+    "zero-trust-agent": {
+      "name": "zero-trust-agent",
+      "model_tier": "light",
+      "description": "Continuous validation of Cloudflare API token health, expiry, and scope integrity. AES-256-GCM encrypted vault with live CF API validation, anomaly prioritization (P0-P2), and composite trust scoring.",
+      "team": "security",
+      "capabilities": [],
+      "tools": []
+    },
+    "discovery-framework-agent": {
+      "name": "discovery-framework-agent",
+      "model_tier": "free",
+      "description": "Extract discovery patterns from client transcripts, conversations, and intake data. Use when analyzing new client engagements, comparing discovery patterns across clients, building discovery questionnaires, or generating structured intake reports for downstream agents.",
+      "team": "platform",
+      "capabilities": [],
+      "tools": []
+    },
+    "infrastructure-agent": {
+      "name": "infrastructure-agent",
+      "model_tier": "light",
+      "description": "Cloud infrastructure management agent. Manages Cloudflare resource inventory (Workers, D1, R2, KV, Vectorize, Queues), DNS configuration, capacity tracking, resource provisioning, and cost attribution across environments.",
+      "team": "operations",
+      "capabilities": [
+        "Resource Inventory",
+        "DNS Management",
+        "Capacity Tracking",
+        "Environment Parity",
+        "Resource Provisioning",
+        "Cost Attribution"
+      ],
+      "tools": []
+    },
+    "treasury-agent": {
+      "name": "treasury-agent",
+      "model_tier": "light",
+      "description": "Cash management and banking agent. Uses Mercury MCP for real-time cash position monitoring, bill pay scheduling, yield optimization, and cash flow forecasting.",
+      "team": "financial",
+      "capabilities": [
+        "Cash Position Monitoring",
+        "Bill Pay Scheduling",
+        "Cash Flow Forecasting",
+        "Yield Optimization",
+        "Payment Approval Workflow",
+        "Account Statement Analysis"
+      ],
+      "tools": [
+        "getAccount",
+        "getAccounts",
+        "getAccountCards",
+        "getAccountStatements",
+        "getTransaction",
+        "listTransactions",
+        "getRecipient",
+        "getRecipients",
+        "getOrganization",
+        "getTreasury",
+        "getTreasuryTransactions",
+        "listCategories",
+        "listCredit"
+      ]
+    },
+    "network-security-agent": {
+      "name": "network-security-agent",
+      "model_tier": "light",
+      "description": "Network and infrastructure security agent. Manages WAF rules, DDoS protection, rate limiting, geo-blocking, SSL/TLS configuration, firewall policies, and edge security controls across the Cloudflare infrastructure.",
+      "team": "security",
+      "capabilities": [
+        "WAF Rule Management",
+        "DDoS Protection",
+        "Rate Limiting",
+        "Geo-Blocking",
+        "SSL/TLS Management",
+        "Firewall Rules",
+        "Bot Management"
+      ],
+      "tools": []
+    },
+    "qa-agent": {
+      "name": "qa-agent",
+      "model_tier": "free",
+      "description": "Quality assurance agent. Manages test planning, bug triage, quality standards, test coverage tracking, regression analysis, and release readiness assessments.",
+      "team": "product",
+      "capabilities": [
+        "Test Planning",
+        "Bug Triage",
+        "Coverage Tracking",
+        "Regression Analysis",
+        "Release Readiness",
+        "Quality Metrics"
+      ],
+      "tools": []
+    },
+    "data-model-agent": {
+      "name": "data-model-agent",
+      "model_tier": "free",
+      "description": "Design normalized database schemas from discovery data. Use when building new platforms, designing D1 table structures, generating migration SQL, mapping client data to standard models, or planning schema evolution.",
+      "team": "platform",
+      "capabilities": [],
+      "tools": []
+    },
+    "cloudflare-deployment-agent": {
+      "name": "cloudflare-deployment-agent",
+      "model_tier": "free",
+      "description": "Deploy Workers, Pages, and infrastructure to Cloudflare. Use when deploying code, managing versions, rolling back changes, running quality gates, or automating CI/CD pipelines for Hardshell platform services.",
+      "team": "platform",
+      "capabilities": [],
+      "tools": []
+    },
+    "coo-agent": {
+      "name": "coo-agent",
+      "model_tier": "mid",
+      "description": "Chief Operations Officer orchestrator. Oversees platform operations, incident response, resource optimization, cross-departmental coordination, and operational KPI tracking. Delegates to SRE and DevOps agents.",
+      "team": "operations",
+      "capabilities": [
+        "Operational Dashboard",
+        "Incident Coordination",
+        "Resource Optimization",
+        "Cross-Team Coordination",
+        "Runbook Management",
+        "Capacity Planning"
+      ],
+      "tools": []
+    },
+    "ciso-agent": {
+      "name": "ciso-agent",
+      "model_tier": "mid",
+      "description": "Chief Information Security Officer orchestrator. Coordinates the security team (Zero Trust, CF Security, Policy) and provides unified security posture assessment, incident response coordination, and cross-team security oversight.",
+      "team": "security",
+      "capabilities": [
+        "Security Posture Dashboard",
+        "Incident Response Coordination",
+        "Risk Register Management",
+        "Security Architecture Review",
+        "Vendor Security Assessment",
+        "Compliance Orchestration"
+      ],
+      "tools": []
+    },
+    "runbook-agent": {
+      "name": "runbook-agent",
+      "model_tier": "free",
+      "description": "Operational runbook and process automation agent. Maintains operational procedures, manages scheduled maintenance tasks, tracks change management, and automates routine operational workflows. Ensures repeatable and documented operations.",
+      "team": "operations",
+      "capabilities": [
+        "Runbook Management",
+        "Scheduled Maintenance",
+        "Change Management",
+        "Process Automation",
+        "Operational Checklists",
+        "Knowledge Transfer"
+      ],
+      "tools": []
+    },
+    "data-analyst-agent": {
+      "name": "data-analyst-agent",
+      "model_tier": "light",
+      "description": "Data analytics agent. Performs funnel analysis, user behavior tracking, KPI dashboarding, A/B test evaluation, cohort analysis, and data-driven product recommendations.",
+      "team": "product",
+      "capabilities": [
+        "Funnel Analysis",
+        "KPI Dashboards",
+        "A/B Test Evaluation",
+        "Cohort Analysis",
+        "Behavioral Analytics",
+        "Product Recommendations"
+      ],
+      "tools": []
+    },
+    "culture-engagement-agent": {
+      "name": "culture-engagement-agent",
+      "model_tier": "free",
+      "description": "Culture and employee engagement agent. Manages engagement surveys, culture initiatives, team health monitoring, recognition programs, and retention analytics.",
+      "team": "talent",
+      "capabilities": [
+        "Engagement Surveys",
+        "Team Health",
+        "Recognition Programs",
+        "Retention Analytics",
+        "Culture Initiatives",
+        "eNPS Tracking"
+      ],
+      "tools": []
+    },
+    "cloudflare-security-agent": {
+      "name": "cloudflare-security-agent",
+      "model_tier": "light",
+      "description": "Comprehensive Cloudflare security auditing, compliance assessment, and hardening recommendations. Use when evaluating account security posture, identifying vulnerabilities, checking API token exposure, validating encryption/access controls, or generating security compliance reports.",
+      "team": "security",
+      "capabilities": [],
+      "tools": []
+    },
+    "growth-strategist-agent": {
+      "name": "growth-strategist-agent",
+      "model_tier": "mid",
+      "description": "Chief Growth Strategy Officer orchestrator. Develops revenue-generating strategies, leads client acquisition and retention programs, manages pipeline tracking, and oversees partnership development. Coordinates Sales, Content Marketing, and Marketing Analyst agents.",
+      "team": "growth",
+      "capabilities": [
+        "Pipeline Management",
+        "Client Acquisition Strategy",
+        "Retention Programs",
+        "Partnership Development",
+        "Revenue Forecasting",
+        "Growth Experiments"
+      ],
+      "tools": []
+    },
+    "telegram-command-menu": {
+      "name": "telegram-command-menu",
+      "model_tier": "free",
+      "description": "Telegram slash command handler and inline keyboard navigation for agent team access. Routes /finance, /legal, /tax, /cash, /hipaa, /contract, /team, /compliance, and /help commands to appropriate agents with button-driven UX.",
+      "team": "platform",
+      "capabilities": [
+        "Slash Command Handling",
+        "Inline Keyboard Generation",
+        "Callback Routing",
+        "Quick Actions",
+        "Help System"
+      ],
+      "tools": []
+    },
+    "cfo-agent": {
+      "name": "cfo-agent",
+      "model_tier": "free",
+      "description": "Personal CFO agent for independent practitioners. Handles cost/revenue optimization, tax compliance automation, financial calendaring, and subscription auditing. Use when provisioning financial management agents for clients.",
+      "team": "financial",
+      "capabilities": [
+        "Revenue & Cost Tracking",
+        "Tax Compliance Automation",
+        "Subscription Audit",
+        "Financial Calendar",
+        "Growth Modeling",
+        "Expense Categorization"
+      ],
+      "tools": []
+    },
+    "onboarding-playbook-agent": {
+      "name": "onboarding-playbook-agent",
+      "model_tier": "free",
+      "description": "Generate structured client onboarding timelines, phase plans, SOWs, and engagement playbooks. Use when planning new client projects, defining delivery phases, creating statements of work, or designing success metrics for managed service engagements.",
+      "team": "platform",
+      "capabilities": [],
+      "tools": []
+    },
+    "training-agent": {
+      "name": "training-agent",
+      "model_tier": "free",
+      "description": "Agent training and knowledge curation agent. Develops skill templates, curates knowledge bases, manages onboarding sequences for new agents, and maintains documentation standards across the agent ecosystem.",
+      "capabilities": [
+        "SKILL.md Templates",
+        "Knowledge Base Curation",
+        "Agent Onboarding",
+        "Documentation Standards",
+        "Best Practices Library",
+        "Skill Gap Training"
+      ],
+      "tools": []
+    },
+    "cpo-agent": {
+      "name": "cpo-agent",
+      "model_tier": "mid",
+      "description": "Chief Product Officer orchestrator. Drives product strategy, roadmap prioritization, feature lifecycle management, and user research synthesis. Coordinates Product Manager and UX Researcher agents.",
+      "team": "product",
+      "capabilities": [
+        "Product Roadmap",
+        "Feature Lifecycle",
+        "User Research Synthesis",
+        "Competitive Analysis",
+        "Launch Planning",
+        "Metrics & OKRs"
+      ],
+      "tools": []
+    },
+    "regulatory-compliance-agent": {
+      "name": "regulatory-compliance-agent",
+      "model_tier": "mid",
+      "description": "Multi-jurisdiction regulatory compliance agent. Covers federal (SEC, FTC, DOL), state (all 50), county/municipal, and industry-specific regulations for finance (FINRA, FinCEN) and healthcare (HHS, FDA, CMS).",
+      "team": "legal",
+      "capabilities": [
+        "Multi-Jurisdiction Compliance",
+        "Industry-Specific Regulations",
+        "Compliance Calendar",
+        "Regulatory Change Monitoring",
+        "License Management",
+        "Compliance Gap Analysis"
+      ],
+      "tools": []
+    },
+    "tax-strategist-agent": {
+      "name": "tax-strategist-agent",
+      "model_tier": "mid",
+      "description": "Tax planning, optimization, and compliance agent. Handles quarterly estimates, capital gains tracking, entity structuring, tax-loss harvesting coordination, and multi-jurisdiction tax compliance calendars.",
+      "team": "financial",
+      "capabilities": [
+        "Quarterly Estimated Taxes",
+        "Capital Gains/Losses",
+        "Tax-Loss Harvesting",
+        "Entity Structuring",
+        "Deduction Optimization",
+        "QBI Deduction",
+        "Compliance Calendar"
+      ],
+      "tools": []
+    },
+    "healthcare-compliance-agent": {
+      "name": "healthcare-compliance-agent",
+      "model_tier": "mid",
+      "description": "Healthcare-specific compliance agent. Covers HIPAA (Privacy, Security, Breach Notification rules), state telehealth regulations, DEA/controlled substance compliance, medical board licensing, BAA management, and clinical billing compliance (False Claims Act, Anti-Kickback, Stark Law).",
+      "team": "legal",
+      "capabilities": [
+        "HIPAA Compliance",
+        "State Health Regulations",
+        "Medical Board Compliance",
+        "DEA Compliance",
+        "BAA Management",
+        "Billing Compliance",
+        "Telehealth Compliance"
+      ],
+      "tools": []
+    },
+    "sre-agent": {
+      "name": "sre-agent",
+      "model_tier": "light",
+      "description": "Site Reliability Engineering agent. Monitors platform health, manages alerting rules, tracks SLOs/SLIs, and generates reliability reports. Provides observability analysis and incident detection for Cloudflare Workers infrastructure.",
+      "team": "operations",
+      "capabilities": [
+        "Health Monitoring",
+        "SLO/SLI Management",
+        "Alert Management",
+        "Observability Analysis",
+        "Capacity Monitoring",
+        "Incident Detection"
+      ],
+      "tools": []
+    },
+    "ux-researcher-agent": {
+      "name": "ux-researcher-agent",
+      "model_tier": "light",
+      "description": "UX research and user feedback analysis agent. Conducts user research, analyzes feedback patterns, develops personas, runs usability heuristic evaluations, and synthesizes findings into actionable product recommendations.",
+      "team": "product",
+      "capabilities": [
+        "Feedback Analysis",
+        "Persona Development",
+        "Usability Heuristics",
+        "Journey Mapping",
+        "Competitive UX Audit",
+        "Research Synthesis"
+      ],
+      "tools": []
+    },
+    "corporate-contracts-agent": {
+      "name": "corporate-contracts-agent",
+      "model_tier": "mid",
+      "description": "Corporate law and contract management agent. Handles entity formation (LLC, S-Corp, C-Corp), contract drafting (NDAs, MSAs, SOWs, SaaS agreements), M&A support, and corporate governance documentation.",
+      "team": "legal",
+      "capabilities": [
+        "Entity Formation",
+        "Contract Drafting",
+        "Contract Review",
+        "M&A Support",
+        "Corporate Governance",
+        "State Compliance"
+      ],
+      "tools": []
+    },
+    "customer-success-agent": {
+      "name": "customer-success-agent",
+      "model_tier": "light",
+      "description": "Customer success and retention agent. Manages client health scoring, engagement tracking, churn prevention, account expansion, QBR preparation, and onboarding optimization. Combines Vidaliaverse Account Manager, CX Analyst, and Retention Specialist roles.",
+      "team": "growth",
+      "capabilities": [
+        "Client Health Scoring",
+        "Churn Prevention",
+        "QBR Preparation",
+        "Onboarding Optimization",
+        "Account Expansion",
+        "NPS & CSAT Tracking"
+      ],
+      "tools": []
+    },
+    "omega": {
+      "name": "omega",
+      "model_tier": "premium",
+      "description": "Omega is the default cognitive amplifier agent — a human-digital symbiosis partner. It orchestrates all other agents, maintains per-user knowledge graphs, and adapts its communication style to each user. Omega is the first point of contact and the last line of support.",
+      "capabilities": [],
+      "tools": []
+    },
+    "product-manager-agent": {
+      "name": "product-manager-agent",
+      "model_tier": "light",
+      "description": "Product management agent. Writes feature specifications, user stories, acceptance criteria, manages sprint backlogs, and tracks feature delivery across development cycles.",
+      "team": "product",
+      "capabilities": [
+        "Feature Specifications",
+        "User Story Writing",
+        "Backlog Management",
+        "Sprint Planning",
+        "Release Notes",
+        "Dependency Mapping"
+      ],
+      "tools": []
+    },
+    "general-counsel-agent": {
+      "name": "general-counsel-agent",
+      "model_tier": "mid",
+      "description": "Legal team orchestrator. Handles contract review triage, compliance calendar oversight, cross-team coordination with CFO, and client-facing legal strategy. Delegates specialty work to corporate, regulatory, IP, litigation, and healthcare agents.",
+      "team": "legal",
+      "capabilities": [
+        "Contract Review Triage",
+        "Compliance Calendar",
+        "Legal Risk Dashboard",
+        "Cross-Team Coordination",
+        "Client Advisory",
+        "Escalation Management"
+      ],
+      "tools": []
+    },
+    "integration-architect-agent": {
+      "name": "integration-architect-agent",
+      "model_tier": "free",
+      "description": "Assess technology stacks, identify compliance requirements, perform security audits, and recommend integration architecture. Use when evaluating tech choices, ensuring HIPAA/GDPR/compliance, planning integrations, or auditing security posture.",
+      "team": "platform",
+      "capabilities": [],
+      "tools": []
+    },
+    "partnerships-agent": {
+      "name": "partnerships-agent",
+      "model_tier": "light",
+      "description": "Strategic partnerships and alliance management agent. Sources partnership opportunities, evaluates strategic fit, drafts partnership proposals, manages co-marketing initiatives, tracks referral programs, and maintains partner relationship health.",
+      "team": "growth",
+      "capabilities": [
+        "Partner Sourcing",
+        "Fit Evaluation",
+        "Proposal Generation",
+        "Referral Programs",
+        "Co-Marketing",
+        "Partner Health"
+      ],
+      "tools": []
+    },
+    "incident-response-agent": {
+      "name": "incident-response-agent",
+      "model_tier": "mid",
+      "description": "Security incident response and forensics agent. Handles active incident triage, containment procedures, evidence collection, root cause analysis, post-mortem generation, and remediation tracking. Maintains the incident response lifecycle from detection through recovery.",
+      "team": "security",
+      "capabilities": [
+        "Incident Triage",
+        "Containment Procedures",
+        "Evidence Collection",
+        "Root Cause Analysis",
+        "Post-Mortem Generation",
+        "Remediation Tracking",
+        "Runbook Maintenance"
+      ],
+      "tools": []
+    },
+    "marketing-analyst-agent": {
+      "name": "marketing-analyst-agent",
+      "model_tier": "free",
+      "description": "Marketing analytics and attribution agent. Analyzes campaign performance, tracks conversion funnels, provides competitive intelligence, and generates market research reports.",
+      "team": "growth",
+      "capabilities": [
+        "Campaign Analytics",
+        "Attribution Modeling",
+        "Conversion Funnel Analysis",
+        "Market Research",
+        "Competitive Intelligence",
+        "Reporting"
+      ],
+      "tools": []
+    },
+    "investor-relations-agent": {
+      "name": "investor-relations-agent",
+      "model_tier": "mid",
+      "description": "Investor relations and board reporting agent. Generates board decks, investor updates, KPI dashboards, cap table analysis, and fundraising pipeline tracking via Linear.",
+      "team": "financial",
+      "capabilities": [
+        "Board Deck Generation",
+        "KPI Dashboard",
+        "Investor Update Drafts",
+        "Cap Table Awareness",
+        "Fundraising Pipeline",
+        "Data Room Prep"
+      ],
+      "tools": []
+    },
+    "sales-agent": {
+      "name": "sales-agent",
+      "model_tier": "light",
+      "description": "Sales execution agent. Handles outbound prospecting, proposal generation, deal tracking, client research, and pipeline management via Linear and CRM.",
+      "team": "growth",
+      "capabilities": [
+        "Lead Research",
+        "Outreach Drafting",
+        "Proposal Generation",
+        "Deal Tracking",
+        "Competitive Intelligence",
+        "Meeting Prep"
+      ],
+      "tools": []
+    },
+    "cloudflare-config-agent": {
+      "name": "cloudflare-config-agent",
+      "model_tier": "free",
+      "description": "Manage OpenClaw configuration, secrets, and environment variables via Cloudflare API (no shell access needed). Use when updating gateway config, managing Telegram pairing, storing API tokens in KV, managing Workers environment, or configuring D1 access without direct server access.",
+      "team": "platform",
+      "capabilities": [],
+      "tools": []
+    },
+    "litigation-disputes-agent": {
+      "name": "litigation-disputes-agent",
+      "model_tier": "mid",
+      "description": "Litigation risk assessment and dispute resolution agent. Monitors court records via PACER, manages litigation holds, tracks statute of limitations, performs settlement cost-benefit analysis, and coordinates insurance coverage.",
+      "team": "legal",
+      "capabilities": [
+        "Risk Assessment",
+        "Dispute Resolution",
+        "Court Monitoring",
+        "Litigation Hold",
+        "Settlement Analysis",
+        "Insurance Coordination",
+        "Statute of Limitations Tracking"
+      ],
+      "tools": []
+    },
+    "policy-compliance-agent": {
+      "name": "policy-compliance-agent",
+      "model_tier": "mid",
+      "description": "Security policy, AI ethics, and data governance agent. Develops and analyzes policies for AI usage, data handling, and technology compliance. Ensures alignment with legal standards, industry frameworks (NIST CSF, CIS, ISO 27001), and organizational values.",
+      "team": "security",
+      "capabilities": [
+        "Security Policy Management",
+        "AI Ethics & Governance",
+        "Data Classification",
+        "Compliance Framework Mapping",
+        "Acceptable Use Policies",
+        "Audit Preparation"
+      ],
+      "tools": []
+    },
+    "financial-analyst-agent": {
+      "name": "financial-analyst-agent",
+      "model_tier": "light",
+      "description": "Financial modeling and forecasting agent. Provides scenario analysis, unit economics, burn rate calculations, Monte Carlo simulation, and budget variance analysis.",
+      "team": "financial",
+      "capabilities": [
+        "Scenario Modeling",
+        "Unit Economics",
+        "Burn Rate & Runway",
+        "Monte Carlo Simulation",
+        "Budget Variance",
+        "Growth Modeling",
+        "Sensitivity Analysis"
+      ],
+      "tools": []
+    },
+    "linear-issue-manager": {
+      "name": "linear-issue-manager",
+      "model_tier": "free",
+      "description": "Manage all Linear workspace operations — issues, projects, teams, priorities, and standup. Use for creating, updating, searching, and tracking issues across all stream-kinetics initiatives. Supports human-friendly status mapping, team auto-discovery with caching, daily standup summaries, and the Standard Client Discovery Framework.",
+      "team": "platform",
+      "capabilities": [],
+      "tools": []
+    },
+    "gateway-integrations": {
+      "name": "gateway-integrations",
+      "model_tier": "free",
+      "description": "Manage OpenClaw gateway startup, KV-based configuration persistence, and Telegram pairing lifecycle. Use when configuring gateway startup sequence, persisting config to KV, managing Telegram bot pairing, or debugging gateway configuration issues.",
+      "team": "platform",
+      "capabilities": [],
+      "tools": []
+    }
+  },
+  "teams": {
+    "platform": [
+      "video-moment-analyzer",
+      "crm-analyst-agent",
+      "discovery-framework-agent",
+      "data-model-agent",
+      "cloudflare-deployment-agent",
+      "telegram-command-menu",
+      "onboarding-playbook-agent",
+      "integration-architect-agent",
+      "cloudflare-config-agent",
+      "linear-issue-manager",
+      "gateway-integrations"
+    ],
+    "growth": [
+      "content-marketing-agent",
+      "customer-support-agent",
+      "growth-strategist-agent",
+      "customer-success-agent",
+      "partnerships-agent",
+      "marketing-analyst-agent",
+      "sales-agent"
+    ],
+    "financial": [
+      "quant-agent",
+      "controller-agent",
+      "treasury-agent",
+      "cfo-agent",
+      "tax-strategist-agent",
+      "investor-relations-agent",
+      "financial-analyst-agent"
+    ],
+    "legal": [
+      "ip-privacy-agent",
+      "regulatory-compliance-agent",
+      "healthcare-compliance-agent",
+      "corporate-contracts-agent",
+      "general-counsel-agent",
+      "litigation-disputes-agent"
+    ],
+    "operations": [
+      "devops-agent",
+      "infrastructure-agent",
+      "coo-agent",
+      "runbook-agent",
+      "sre-agent"
+    ],
+    "talent": [
+      "learning-development-agent",
+      "culture-engagement-agent"
+    ],
+    "security": [
+      "zero-trust-agent",
+      "network-security-agent",
+      "ciso-agent",
+      "cloudflare-security-agent",
+      "incident-response-agent",
+      "policy-compliance-agent"
+    ],
+    "product": [
+      "qa-agent",
+      "data-analyst-agent",
+      "cpo-agent",
+      "ux-researcher-agent",
+      "product-manager-agent"
+    ]
+  }
+}
